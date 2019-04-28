@@ -5,6 +5,7 @@
 typedef struct {
 	pid_t from;
 	pid_t to;
+	int response;
 } request;
 
 typedef struct {
@@ -35,6 +36,12 @@ typedef struct {
 	float success_rate;
 } ministry;
 
+typedef struct {
+	char * name;
+	char * success;
+	char * failure;
+} action;
+
 executive * create_executive(pid_t id);
 
 legislative * create_legislative(pid_t id);
@@ -60,3 +67,11 @@ static void sig_handler_leg_usr2(int signal);
 static void sig_handler_jud_usr1(int signal);
 
 static void sig_handler_jud_usr2(int signal);
+
+char * read_keyword(FILE * f);
+
+int accepted(float success_rate);
+
+void write_pipe(const char msg[], int pipe[2]);
+
+void send_president_request(pid_t from, pid_t to, int response);

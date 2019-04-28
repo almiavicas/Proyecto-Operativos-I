@@ -132,3 +132,36 @@ ministry * create_ministry(pid_t id) {
 	return min;
 }
 
+char * read_keyword(FILE * f) {
+	char * word = malloc(sizeof(char) * 15);
+	if (word == NULL) {
+		fprintf(stderr, "%s\n", "Not enought memory");
+		return NULL;
+	}
+	int i = 0;
+	char c;
+	while ((c = fgetc(f)) != ':') {
+		if (c == '\n') {
+			free(word);
+			return NULL;
+		}
+		word[i++] = c;
+	}
+	return word;
+}
+
+int accepted(float success_rate) {
+	float f = (float) rand();
+	if (success_rate >= f) {
+		return 1;
+	}
+	return 0;
+}
+
+void write_pipe(const char msg[], int pipe[2]) {
+	write(pipe[1], msg, strlen(msg) + 1);
+}
+
+void send_president_request(pid_t from, pid_t to, int response) {
+	
+}
