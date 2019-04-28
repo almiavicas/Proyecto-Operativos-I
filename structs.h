@@ -45,11 +45,11 @@ ministry * create_ministry(pid_t id);
 
 static int press_task(pid_t id);
 
-static int executive_task(pid_t id);
+static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2]);
 
-static int legislative_task(pid_t id);
+static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg[2], int leg_press[2], int press_leg[2]);
 
-static int judicial_task(pid_t id);
+static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2], int jud_press[2]);
 
 static int ministry_task(pid_t id);
 
