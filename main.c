@@ -11,6 +11,7 @@
 #define EXECUTIVE_SEM "exec_sem"
 #define LEGISLATIVE_SEM "leg_sem"
 #define JUDICIAL_SEM "jud_sem"
+#define REQUEST_SEM "req_sem"
 #define LINE_LEN 100
 
 const char aprobacion[] = "aprobacion";
@@ -68,8 +69,10 @@ int main(int argc, char const *argv[]) {
 	sem_t *exec_mutex = sem_open(EXECUTIVE_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *leg_mutex = sem_open(LEGISLATIVE_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *jud_mutex = sem_open(JUDICIAL_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+	sem_t *req_mutex = sem_open(REQUEST_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// sem_init() is used for threads
 	sem_close(ministry_mutex);
+	sem_close(req_mutex);
 	
 	// Pipes config for press
 	close(ex_press[1]);
@@ -148,6 +151,7 @@ int main(int argc, char const *argv[]) {
 	sem_unlink(EXECUTIVE_SEM);
 	sem_unlink(LEGISLATIVE_SEM);
 	sem_unlink(JUDICIAL_SEM);
+	sem_unlink(REQUEST_SEM);
 	return 0;
 }
 
@@ -489,7 +493,9 @@ static void sig_handler_jud_usr2(int signal) {
 }
 
 void send_president_request(pid_t from, pid_t to, int result) {
+	sem_t * req_mutex = sem_open(REQUEST_SEM, O_CREAT);
 	request req = *create_request(from, to, result);
+	sem_wait(req_mutex);
 	PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "a+");
 	if (PRESIDENT_REQUESTS_F == NULL) {
 		fprintf(stderr, "%s\n", "File not found: PedidosPresidenciales.txt");
@@ -497,4 +503,6 @@ void send_president_request(pid_t from, pid_t to, int result) {
 	}
 	fprintf(PRESIDENT_REQUESTS_F, "%d %d %d\n", from, to, result);
 	fclose(PRESIDENT_REQUESTS_F);
+	sem_post(req_mutex);
+	sem_close(req_mutex);
 }
