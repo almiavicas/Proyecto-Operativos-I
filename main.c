@@ -211,7 +211,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						char response;
 						char * line;
 						while (!feof(PRESIDENT_REQUESTS_F)) {
-							fgets(PRESIDENT_REQUESTS_F, line, LINE_LEN);
+							fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 							parse_response(line, from_id, to_id, &response);
 							int from = atoi(from_id);
 							// We are searching the request that was sent by
@@ -221,11 +221,35 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 								break;
 							} 
 						}
+						fclose(PRESIDENT_REQUESTS_F);
 						sem_post(req_mutex);
 						sem_close(req_mutex);
 					}
 					else if(!strcmp(value, tribunal)) {
-
+						write_pipe("PP", ex_jud);
+						kill(jud_id, SIGUSR1);
+						sigsuspend(&mask);
+						sem_t * req_mutex = sem_open(REQUEST_SEM, O_CREAT);
+						sem_wait(req_mutex);
+						PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
+						char * from_id;
+						char * to_id;
+						char response;
+						char * line;
+						while (!feof(PRESIDENT_REQUESTS_F)) {
+							fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
+							parse_response(line, from_id, to_id, &response);
+							int from = atoi(from_id);
+							// We are searching the request that was sent by
+							// the president.
+							if (from == exec_id) {
+								if (response = '0') success = 0;
+								break;
+							} 
+						}
+						fclose(PRESIDENT_REQUESTS_F);
+						sem_post(req_mutex);
+						sem_close(req_mutex);
 					}
 					else {
 						fprintf(stderr, "%s%s\n", "Error parsing power name: ", value);
