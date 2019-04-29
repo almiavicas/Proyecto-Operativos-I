@@ -38,6 +38,7 @@ FILE * LEGISLATIVE_F;
 FILE * JUDICIAL_F;
 FILE * MINISTRIES_F;
 FILE * PRESIDENT_REQUESTS_F;
+FILE * METADATA_F;
 pid_t exec_id, leg_id, jud_id;
 executive president;
 legislative congress;
@@ -110,6 +111,11 @@ int main(int argc, char const *argv[]) {
 		return 1;
 	}
 	fclose(PRESIDENT_REQUESTS_F);
+	METADATA_F = fopen("Metadata.txt", "w+");
+	if (METADATA_F == NULL) {
+		fprintf(stderr, "%s\n", "Cannot create file: Metadata.txt");
+		return 1;
+	}
 
 	for (int i = 0; i < 3; i++) {
 		if (fork() == 0) {
@@ -124,7 +130,14 @@ int main(int argc, char const *argv[]) {
 			}
 		}
 	}
-
+	fprintf(METADATA_F, "%s %d\n", "P", exec_id);
+	fprintf(METADATA_F, "%s %d\n", "C", leg_id);
+	fprintf(METADATA_F, "%s %d\n", "T", jud_id);
+	fclose(METADATA_F);
+	// Tell the children that we finished up the metadata
+	kill(exec_id, SIGCONT);
+	kill(leg_id, SIGCONT);
+	kill(jud_id, SIGCONT);
 	int num_actions = 0;
 	int max_actions = atoi(argv[2]);
 	while (num_actions < max_actions) {
@@ -172,6 +185,9 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	// This is the signal we don't want to block when waiting responses, since
 	// it will be the one that the congress and tribune will send
 	sigdelset(&mask, SIGUSR1);
+	// We wait until the parent finishes up the metadata
+	kill(getpid(), SIGSTOP);
+	process_metadata();
 
 	// Task management
 	while (1) {
@@ -189,7 +205,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					fprintf(stderr, "%s\n", "Error reading file Ejecutivo.acc");
 					return -1;
 				}
-				if (!strcmp(keyword, aprobacion) && success) {
+				if (!(strcmp(keyword, aprobacion) && strcmp(keyword, reprobacion)) && success) {
 					if (!strcmp(value, presidente)) {
 						success = accepted(president.success_rate);
 					}
@@ -255,9 +271,6 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						fprintf(stderr, "%s%s\n", "Error parsing power name: ", value);
 						return -1;
 					}
-				}
-				else if (!strcmp(keyword, reprobacion) && success) {
-
 				}
 				else if (!strcmp(keyword, asignar) && success) {
 					
@@ -570,4 +583,27 @@ void parse_request(char * request, char * from, char * to, char * response) {
 	while ((to[i++] = request[j++]) != ' ');
 	j++;
 	*response = request[j];
+}
+
+void process_metadata() {
+	METADATA_F = fopen("Metadata.txt", "r");
+	for(char * line = fgets(line, LINE_LEN, METADATA_F); !feof(METADATA_F); line = fgets(line, LINE_LEN, METADATA_F)) {
+		if (line[0] = 'P') {
+			line += 2;
+			exec_id = atoi(line);
+		}
+		else if (line[0] = 'C') {
+			line += 2;
+			leg_id = atoi(line);
+		}
+		else if (line[0] = 'T') {
+			line += 2;
+			jud_id = atoi(line);
+		}
+		else {
+			fprintf(stderr, "%s\n", "Error in metadata file");
+			exit(1);
+		}
+	}
+
 }
