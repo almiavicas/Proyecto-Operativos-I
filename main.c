@@ -40,6 +40,7 @@ pid_t exec_id, leg_id, jud_id;
 executive president;
 legislative congress;
 judicial tribune;
+list_t president_requests;
 int ex_jud[2];
 int ex_leg[2];
 int leg_jud[2];
@@ -59,8 +60,11 @@ int main(int argc, char const *argv[]) {
 	pipe(leg_press);
 	pipe(jud_press);
 	pipe(press_leg);
+	president_requests = *new_ordered_list();
 	// Mutex shared between processes
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	// These mutexes are for the press process. When they are unlocked, The
+	// press reads from its corresponding pipe and prints
 	sem_t *exec_mutex = sem_open(EXECUTIVE_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *leg_mutex = sem_open(LEGISLATIVE_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *jud_mutex = sem_open(JUDICIAL_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
@@ -98,9 +102,6 @@ int main(int argc, char const *argv[]) {
 	}
 	fclose(MINISTRIES_F);
 
-	if (fork() == 0) {
-		return press_task(getpid());
-	}
 	for (int i = 0; i < 3; i++) {
 		if (fork() == 0) {
 			if (i == 0) {
@@ -152,6 +153,11 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	close(ex_leg[0]);
 	close(ex_press[0]);
 	EXECUTIVE_F = fopen("Ejecutivo.acc", "r+");
+	sigset_t mask;
+	sigfillset(&mask);
+	// This is the signal we don't want to block when waiting responses, since
+	// it will be the one that the congress and tribune will send
+	sigdelset(&mask, SIGUSR1);
 
 	// Task management
 	while (1) {
@@ -175,7 +181,14 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					}
 					else if(!strcmp(value, congreso)) {
 						write_pipe("PP", ex_leg);
+						// We interrupt the congress to tell them to answer us
 						kill(leg_id, SIGUSR1);
+						// We wait until the congress responds
+						// We suspend this process until SIGUSR1 is caught
+						sigsuspend(&mask);
+						// At this point, the default sigset_t configuration of
+						// the process will restore itself.
+						// Now we check what the congress answered
 					}
 					else if(!strcmp(value, tribunal)) {
 
@@ -433,10 +446,6 @@ static int ministry_task(pid_t id){
 	return 0;
 }
 
-static int press_task(pid_t id) {
-	return 0;
-}
-
 static void sig_handler_leg_usr1(int signal) {
 	// Recibimos del ejecutivo
 	if (&congress == NULL) {
@@ -458,7 +467,6 @@ static void sig_handler_leg_usr1(int signal) {
 			return;
 		}
 	}
-	int success = accepted(congress.success_rate);
 }
 
 static void sig_handler_leg_usr2(int signal) {
@@ -474,8 +482,7 @@ static void sig_handler_jud_usr2(int signal) {
 	// Recibimos del legislativo
 }
 
-static void reading(FILE * f){
-	int c;
-	while((c=fgetc(f))!=EOF){
-	}
+void send_president_request(pid_t from, pid_t to, int result) {
+	request req = *create_request(from, to, result);
+	list_insert(&president_requests, req.from, &req);
 }
