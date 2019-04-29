@@ -15,12 +15,6 @@ executive * create_executive(pid_t id) {
 	}
 	*success_rate = rand();
 	ex->success_rate = *success_rate;
-
-	list_t * requests = new_ordered_list();
-	if (requests == NULL) {
-		free(success_rate);
-		free(ex);
-	}
 	return ex;
 }
 
@@ -132,6 +126,18 @@ ministry * create_ministry(pid_t id) {
 	return min;
 }
 
+request * create_request(pid_t from, pid_t to, int value) {
+	request * req = malloc(sizeof(request));
+	if (req = NULL) {
+		fprintf(stderr, "%s\n", "Not enought memory");
+		return NULL;
+	}
+	req->from = from;
+	req->to = to;
+	req->value = value;
+	return req;
+}
+
 char * read_keyword(FILE * f) {
 	char * word = malloc(sizeof(char) * 15);
 	if (word == NULL) {
@@ -160,8 +166,4 @@ int accepted(float success_rate) {
 
 void write_pipe(const char msg[], int pipe[2]) {
 	write(pipe[1], msg, strlen(msg) + 1);
-}
-
-void send_president_request(pid_t from, pid_t to, int response) {
-	
 }

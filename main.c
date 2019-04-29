@@ -39,7 +39,8 @@ FILE * MINISTRIES_F;
 pid_t exec_id, leg_id, jud_id;
 executive president;
 legislative congress;
-judicial tribune;
+judicial tribune_;
+list_t president_requests;
 int ex_jud[2];
 int ex_leg[2];
 int leg_jud[2];
@@ -59,6 +60,7 @@ int main(int argc, char const *argv[]) {
 	pipe(leg_press);
 	pipe(jud_press);
 	pipe(press_leg);
+	president_requests = *new_ordered_list();
 	// Mutex shared between processes
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// These mutexes are for the press process. When they are unlocked, The
@@ -444,10 +446,6 @@ static int ministry_task(pid_t id){
 	return 0;
 }
 
-static int press_task(pid_t id) {
-	return 0;
-}
-
 static void sig_handler_leg_usr1(int signal) {
 	// Recibimos del ejecutivo
 	if (&congress == NULL) {
@@ -469,7 +467,6 @@ static void sig_handler_leg_usr1(int signal) {
 			return;
 		}
 	}
-	int success = accepted(congress.success_rate);
 }
 
 static void sig_handler_leg_usr2(int signal) {
@@ -485,8 +482,7 @@ static void sig_handler_jud_usr2(int signal) {
 	// Recibimos del legislativo
 }
 
-static void reading(FILE * f){
-	int c;
-	while((c=fgetc(f))!=EOF){
-	}
+void send_president_request(pid_t from, pid_t to, int result) {
+	request req = *create_request(from, to, result);
+	list_insert(president_requests, req.from, &req);
 }
