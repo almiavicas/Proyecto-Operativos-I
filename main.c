@@ -203,7 +203,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						// At this point, the default sigset_t configuration of
 						// the process will restore itself.
 						// Now we check what the congress answered
-						sem_t * req_mutex = sem_open(PRESIDENT_REQUESTS_F, O_CREAT);
+						sem_t * req_mutex = sem_open(REQUEST_SEM, O_CREAT);
 						sem_wait(req_mutex);
 						PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
 						char * from_id;
@@ -211,11 +211,12 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						char response;
 						char * line;
 						while (!feof(PRESIDENT_REQUESTS_F)) {
-							read(PRESIDENT_REQUESTS_F, line, LINE_LEN);
+							fgets(PRESIDENT_REQUESTS_F, line, LINE_LEN);
 							parse_response(line, from_id, to_id, &response);
 							int from = atoi(from_id);
-							int to = atoi(to_id);
-
+							// We are searching the request that was sent by
+							// the president.
+							if (from == exec_id && response = '0') success = 0;
 						}
 						sem_post(req_mutex);
 						sem_close(req_mutex);
