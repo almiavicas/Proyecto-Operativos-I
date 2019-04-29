@@ -59,8 +59,8 @@ int main(int argc, char const *argv[]) {
 	pipe(ex_press);
 	pipe(leg_press);
 	pipe(jud_press);
-	pipe(press_leg);
-	president_requests = *new_ordered_list();
+	pipe(press_leg); 
+	list_t president_requests = *new_ordered_list();
 	// Mutex shared between processes
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// These mutexes are for the press process. When they are unlocked, The
