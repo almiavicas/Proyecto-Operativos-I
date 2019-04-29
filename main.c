@@ -189,9 +189,9 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					fprintf(stderr, "%s\n", "Error reading file Ejecutivo.acc");
 					return -1;
 				}
-				if (!strcmp(keyword, aprobacion)) {
+				if (!strcmp(keyword, aprobacion) && success) {
 					if (!strcmp(value, presidente)) {
-						if (success) success = accepted(president.success_rate);
+						success = accepted(president.success_rate);
 					}
 					else if(!strcmp(value, congreso)) {
 						write_pipe("PP", ex_leg);
@@ -216,7 +216,10 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 							int from = atoi(from_id);
 							// We are searching the request that was sent by
 							// the president.
-							if (from == exec_id && response = '0') success = 0;
+							if (from == exec_id) {
+								if (response = '0') success = 0;
+								break;
+							} 
 						}
 						sem_post(req_mutex);
 						sem_close(req_mutex);
@@ -229,40 +232,40 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						return -1;
 					}
 				}
-				else if (!strcmp(keyword, reprobacion)) {
+				else if (!strcmp(keyword, reprobacion) && success) {
 
 				}
-				else if (!strcmp(keyword, asignar)) {
+				else if (!strcmp(keyword, asignar) && success) {
 					
 				}
-				else if (!strcmp(keyword, exclusivo)) {
+				else if (!strcmp(keyword, exclusivo) && success) {
 					
 				}
-				else if (!strcmp(keyword, inclusivo)) {
+				else if (!strcmp(keyword, inclusivo) && success) {
 					
 				}
-				else if (!strcmp(keyword, leer)) {
+				else if (!strcmp(keyword, leer) && success) {
 					
 				}
-				else if (!strcmp(keyword, escribir)) {
+				else if (!strcmp(keyword, escribir) && success) {
 					
 				}
-				else if (!strcmp(keyword, anular)) {
+				else if (!strcmp(keyword, anular) && success) {
 					
 				}
-				else if (!strcmp(keyword, nombrar)) {
+				else if (!strcmp(keyword, nombrar) && success) {
 					
 				}
-				else if (!strcmp(keyword, destituir)) {
+				else if (!strcmp(keyword, destituir) && success) {
 					
 				}
-				else if (!strcmp(keyword, disolver)) {
+				else if (!strcmp(keyword, disolver) && success) {
 					
 				}
-				else if (!strcmp(keyword, censurar)) {
+				else if (!strcmp(keyword, censurar) && success) {
 					
 				}
-				else if (!strcmp(keyword, renuncia)) {
+				else if (!strcmp(keyword, renuncia) && success) {
 					
 				}
 				else if (!strcmp(keyword, exito)) {
