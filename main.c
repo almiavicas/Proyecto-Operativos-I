@@ -36,11 +36,11 @@ FILE * EXECUTIVE_F;
 FILE * LEGISLATIVE_F;
 FILE * JUDICIAL_F;
 FILE * MINISTRIES_F;
+FILE * PRESIDENT_REQUESTS_F;
 pid_t exec_id, leg_id, jud_id;
 executive president;
 legislative congress;
 judicial tribune;
-list_t president_requests;
 int ex_jud[2];
 int ex_leg[2];
 int leg_jud[2];
@@ -101,6 +101,12 @@ int main(int argc, char const *argv[]) {
 		return 1;
 	}
 	fclose(MINISTRIES_F);
+	PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "w+");
+	if (PRESIDENT_REQUESTS_F == NULL) {
+		fprintf(stderr, "%s\n", "Cannot create file: PedidosPresidenciales.txt");
+		return 1;
+	}
+	fclose(PRESIDENT_REQUESTS_F);
 
 	for (int i = 0; i < 3; i++) {
 		if (fork() == 0) {
@@ -484,5 +490,11 @@ static void sig_handler_jud_usr2(int signal) {
 
 void send_president_request(pid_t from, pid_t to, int result) {
 	request req = *create_request(from, to, result);
-	list_insert(&president_requests, req.from, &req);
+	PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "a+");
+	if (PRESIDENT_REQUESTS_F == NULL) {
+		fprintf(stderr, "%s\n", "File not found: PedidosPresidenciales.txt");
+		return;
+	}
+	fprintf(PRESIDENT_REQUESTS_F, "%d %d %d\n", from, to, result);
+	fclose(PRESIDENT_REQUESTS_F);
 }
