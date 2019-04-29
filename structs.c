@@ -7,14 +7,7 @@ executive * create_executive(pid_t id) {
 		return NULL;
 	}
 	ex->id = id;
-	float * success_rate = malloc(sizeof(float));
-	if (success_rate == NULL) {
-		fprintf(stderr, "%s\n", "Not enought memory");
-		free(ex);
-		return NULL;
-	}
-	*success_rate = rand();
-	ex->success_rate = *success_rate;
+	ex->success_rate = rand();
 	return ex;
 }
 
@@ -25,14 +18,7 @@ legislative * create_legislative(pid_t id) {
 		return NULL;
 	}
 	leg->id = id;
-	float * success_rate = malloc(sizeof(float));
-	if (success_rate == NULL) {
-		fprintf(stderr, "%s\n", "Not enought memory");
-		free(leg);
-		return NULL;
-	}
-	*success_rate = rand();
-	leg->success_rate = *success_rate;
+	leg->success_rate = rand();
 	return leg;
 }
 
@@ -43,12 +29,6 @@ judicial * create_judicial(pid_t id) {
 		return NULL;
 	}
 	jud->id = id;
-	float * success_rate = malloc(sizeof(float));
-	if (success_rate == NULL) {
-		fprintf(stderr, "%s\n", "Not enought memory");
-		free(jud);
-		return NULL;
-	}
 	struct sigaction act;
 	act.sa_handler = sig_handler_jud_usr1;
 	sigemptyset(&(act.sa_mask));
@@ -71,20 +51,10 @@ judicial * create_judicial(pid_t id) {
 		magister[i] = rand();
 		accum += magister[i];
 	}
-	*success_rate = accum / 8.0f;
-	jud->success_rate = *success_rate;
+	jud->success_rate = accum / 8.0f;
 	jud->magister = magister;
 
-	int * magister_count = malloc(sizeof(int));
-	if (magister_count == NULL) {
-		fprintf(stderr, "%s\n", "Not enought memory");
-		free(jud->magister);
-		free(&(jud->success_rate));
-		free(jud);
-		return NULL;
-	}
-	*magister_count = 8;
-	jud->mag_count = *magister_count;
+	jud->mag_count = 8;
 	return jud;
 }
 
@@ -112,17 +82,7 @@ ministry * create_ministry(pid_t id) {
 	}
 
 	min->minister = minister;
-
-	float * success_rate = malloc(sizeof(float));
-	if (success_rate == NULL) {
-		fprintf(stderr, "%s\n", "Not enought memory");
-		free(min->minister);
-		free(min->name);
-		free(min);
-		return NULL;
-	}
-	*success_rate = rand();
-	min->success_rate = *success_rate;
+	min->success_rate = rand();
 	return min;
 }
 
