@@ -74,3 +74,5 @@ int accepted(float success_rate);
 void write_pipe(const char msg[], int pipe[2]);
 
 void send_president_request(pid_t from, pid_t to, int response);
+
+void parse_request(char * request, char * from, char * to, char response);

@@ -143,6 +143,10 @@ int main(int argc, char const *argv[]) {
 		usleep(50);
 	}
 
+	kill(exec_id, SIGTERM);
+	kill(leg_id, SIGTERM);
+	kill(jud_id, SIGTERM);
+
 	sem_close(exec_mutex);
 	sem_close(leg_mutex);
 	sem_close(jud_mutex);
@@ -193,12 +197,28 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						write_pipe("PP", ex_leg);
 						// We interrupt the congress to tell them to answer us
 						kill(leg_id, SIGUSR1);
-						// We wait until the congress responds
-						// We suspend this process until SIGUSR1 is caught
+						// We wait until the congress responds. We
+						// suspend this process until SIGUSR1 is caught by it
 						sigsuspend(&mask);
 						// At this point, the default sigset_t configuration of
 						// the process will restore itself.
 						// Now we check what the congress answered
+						sem_t * req_mutex = sem_open(PRESIDENT_REQUESTS_F, O_CREAT);
+						sem_wait(req_mutex);
+						PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
+						char * from_id;
+						char * to_id;
+						char response;
+						char * line;
+						while (!feof(PRESIDENT_REQUESTS_F)) {
+							read(PRESIDENT_REQUESTS_F, line, LINE_LEN);
+							parse_response(line, from_id, to_id, &response);
+							int from = atoi(from_id);
+							int to = atoi(to_id);
+
+						}
+						sem_post(req_mutex);
+						sem_close(req_mutex);
 					}
 					else if(!strcmp(value, tribunal)) {
 
@@ -458,13 +478,15 @@ static int ministry_task(pid_t id){
 
 static void sig_handler_leg_usr1(int signal) {
 	// Recibimos del ejecutivo
-	if (&congress == NULL) {
+	if (&congress != NULL) {
 		char line[2];
 		read(ex_leg[0], line, 2);
 		if (line[1] = 'P') {
 			int success = accepted(congress.success_rate);
-			// Mandar un request al presidente
+			// Send the answer to president
 			send_president_request(exec_id, exec_id, success);
+			// Tell the president we answered
+			kill(exec_id, SIGUSR1);
 		}
 		else if (line[1] = 'S') {
 
@@ -474,8 +496,12 @@ static void sig_handler_leg_usr1(int signal) {
 		}
 		else {
 			fprintf(stderr, "%s\n", "Error in pipes communication");
-			return;
 		}
+	}
+	else {
+		// The congress doesn't exists, the action fails
+		send_president_request(exec_id, exec_id, 0);
+		kill(exec_id, SIGUSR1);
 	}
 }
 
@@ -505,4 +531,15 @@ void send_president_request(pid_t from, pid_t to, int result) {
 	fclose(PRESIDENT_REQUESTS_F);
 	sem_post(req_mutex);
 	sem_close(req_mutex);
+}
+
+void parse_response(char * request, char * from, char * to, char * response) {
+	int i = 0;
+	int j = 0;
+	while ((from[i++] = request[j++]) != ' ');
+	j++;
+	i = 0;
+	while ((to[i++] = request[j++]) != ' ');
+	j++;
+	*response = request[j];
 }
