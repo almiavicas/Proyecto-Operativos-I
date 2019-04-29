@@ -212,7 +212,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						char * line;
 						while (!feof(PRESIDENT_REQUESTS_F)) {
 							fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
-							parse_response(line, from_id, to_id, &response);
+							parse_request(line, from_id, to_id, &response);
 							int from = atoi(from_id);
 							// We are searching the request that was sent by
 							// the president.
@@ -238,7 +238,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						char * line;
 						while (!feof(PRESIDENT_REQUESTS_F)) {
 							fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
-							parse_response(line, from_id, to_id, &response);
+							parse_request(line, from_id, to_id, &response);
 							int from = atoi(from_id);
 							// We are searching the request that was sent by
 							// the president.
@@ -561,7 +561,7 @@ void send_president_request(pid_t from, pid_t to, int result) {
 	sem_close(req_mutex);
 }
 
-void parse_response(char * request, char * from, char * to, char * response) {
+void parse_request(char * request, char * from, char * to, char * response) {
 	int i = 0;
 	int j = 0;
 	while ((from[i++] = request[j++]) != ' ');
