@@ -134,17 +134,20 @@ int main(int argc, char const *argv[]) {
 		}
 	}
 	sigset_t mask;
+	sigset_t old_mask;
 	sigfillset(&mask);
 	sigdelset(&mask, SIGUSR1);
 	sigdelset(&mask, SIGINT);
-	sigsuspend(&mask);
+	sigprocmask(SIG_BLOCK, &mask, &old_mask);
+	sigsuspend(&old_mask);
 	printf("%s\n", "Received a signal from a child");
 	fflush(stdout);
-	sigsuspend(&mask);
+	sigsuspend(&old_mask);
 	printf("%s\n", "Received a signal from a child");
 	fflush(stdout);
-	sigsuspend(&mask);
+	sigsuspend(&old_mask);
 	printf("%s\n", "My childs are ready for metadata");
+	sigprocmask(SIG_UNBLOCK, &mask, NULL);
 	fflush(stdout);
 	process_metadata();
 	kill(exec_id, SIGCONT);
@@ -194,14 +197,14 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	close(ex_leg[0]);
 	close(ex_press[0]);
 	EXECUTIVE_F = fopen("Ejecutivo.acc", "r+");
-	sigset_t mask;
+	sigset_t mask, old_mask;
 	sigfillset(&mask);
 	// This is the signal we don't want to block when waiting responses, since
 	// it will be the one that the congress and tribune will send
 	sigdelset(&mask, SIGUSR1);
 	sigdelset(&mask, SIGINT);
 	write_metadata('P');
-	kill(getppid(), SIGUSR1);
+	kill(master, SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
@@ -233,7 +236,9 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						kill(leg_id, SIGUSR1);
 						// We wait until the congress responds. We
 						// suspend this process until SIGUSR1 is caught by it
+						sigprocmask(SIG_BLOCK, &mask, &old_mask);
 						sigsuspend(&mask);
+						sigprocmask(SIG_UNBLOCK, &mask, NULL);
 						// At this point, the default sigset_t configuration of
 						// the process will restore itself.
 						// Now we check what the congress answered
@@ -262,7 +267,9 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					else if(!strcmp(value, tribunal)) {
 						write_pipe("PP", ex_jud);
 						kill(jud_id, SIGUSR1);
+						sigprocmask(SIG_BLOCK, &mask, &old_mask);
 						sigsuspend(&mask);
+						sigprocmask(SIG_UNBLOCK, &mask, NULL);
 						sem_t * req_mutex = sem_open(REQUEST_SEM, O_CREAT);
 						sem_wait(req_mutex);
 						PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
