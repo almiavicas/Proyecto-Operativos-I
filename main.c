@@ -139,10 +139,13 @@ int main(int argc, char const *argv[]) {
 	sigdelset(&mask, SIGINT);
 	sigsuspend(&mask);
 	printf("%s\n", "Received a signal from a child");
+	fflush(stdout);
 	sigsuspend(&mask);
 	printf("%s\n", "Received a signal from a child");
+	fflush(stdout);
 	sigsuspend(&mask);
 	printf("%s\n", "My childs are ready for metadata");
+	fflush(stdout);
 	process_metadata();
 	kill(exec_id, SIGCONT);
 	kill(leg_id, SIGCONT);
