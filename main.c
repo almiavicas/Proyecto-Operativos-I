@@ -136,6 +136,7 @@ int main(int argc, char const *argv[]) {
 	sigset_t mask;
 	sigfillset(&mask);
 	sigdelset(&mask, SIGUSR1);
+	sigdelset(&mask, SIGINT);
 	sigsuspend(&mask);
 	sigsuspend(&mask);
 	sigsuspend(&mask);
@@ -614,7 +615,7 @@ void write_metadata(const char C) {
 	sem_t * meta_mutex = sem_open(METADATA_MUTEX, O_CREAT);
 	sem_wait(meta_mutex);
 	METADATA_F = fopen("Metadata.txt", "a+");
-	if (METADATA_F) {
+	if (METADATA_F == NULL) {
 		fprintf(stderr, "%s\n", "Unable to locate file Metadata.txt");
 		exit(1);
 	}
