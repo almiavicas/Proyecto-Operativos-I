@@ -77,4 +77,6 @@ void send_president_request(pid_t from, pid_t to, int response);
 
 void parse_request(char * request, char * from, char * to, char *response);
 
-void process_metadata();
+void write_metadata(const char C);
+
+void process_metadata(void);

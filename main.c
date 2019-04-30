@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include "structs.c"
 
+#define METADATA_MUTEX "metadata_mutex"
 #define MINISTRY_MUTEX "ministry_mutex"
 #define EXECUTIVE_SEM "exec_sem"
 #define LEGISLATIVE_SEM "leg_sem"
@@ -39,7 +40,7 @@ FILE * JUDICIAL_F;
 FILE * MINISTRIES_F;
 FILE * PRESIDENT_REQUESTS_F;
 FILE * METADATA_F;
-pid_t exec_id, leg_id, jud_id;
+pid_t master, exec_id, leg_id, jud_id;
 executive president;
 legislative congress;
 judicial tribune;
@@ -53,7 +54,7 @@ int jud_press[2];
 int press_leg[2];
 
 int main(int argc, char const *argv[]) {
-	pid_t master = getpid();
+	master = getpid();
 	pipe(ex_jud);
 	pipe(ex_leg);
 	pipe(leg_jud);
@@ -71,9 +72,11 @@ int main(int argc, char const *argv[]) {
 	sem_t *leg_mutex = sem_open(LEGISLATIVE_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *jud_mutex = sem_open(JUDICIAL_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *req_mutex = sem_open(REQUEST_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	sem_t *meta_mutex = sem_open(METADATA_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// sem_init() is used for threads
 	sem_close(ministry_mutex);
 	sem_close(req_mutex);
+	sem_close(meta_mutex);
 	
 	// Pipes config for press
 	close(ex_press[1]);
@@ -116,7 +119,7 @@ int main(int argc, char const *argv[]) {
 		fprintf(stderr, "%s\n", "Cannot create file: Metadata.txt");
 		return 1;
 	}
-
+	fclose(METADATA_F);
 	for (int i = 0; i < 3; i++) {
 		if (fork() == 0) {
 			if (i == 0) {
@@ -130,14 +133,17 @@ int main(int argc, char const *argv[]) {
 			}
 		}
 	}
-	fprintf(METADATA_F, "%s %d\n", "P", exec_id);
-	fprintf(METADATA_F, "%s %d\n", "C", leg_id);
-	fprintf(METADATA_F, "%s %d\n", "T", jud_id);
-	fclose(METADATA_F);
-	// Tell the children that we finished up the metadata
+	sigset_t mask;
+	sigfillset(&mask);
+	sigdelset(&mask, SIGUSR1);
+	sigsuspend(&mask);
+	sigsuspend(&mask);
+	sigsuspend(&mask);
+	process_metadata();
 	kill(exec_id, SIGCONT);
 	kill(leg_id, SIGCONT);
 	kill(jud_id, SIGCONT);
+	
 	int num_actions = 0;
 	int max_actions = atoi(argv[2]);
 	while (num_actions < max_actions) {
@@ -169,6 +175,7 @@ int main(int argc, char const *argv[]) {
 	sem_unlink(LEGISLATIVE_SEM);
 	sem_unlink(JUDICIAL_SEM);
 	sem_unlink(REQUEST_SEM);
+	sem_unlink(METADATA_MUTEX);
 	return 0;
 }
 
@@ -185,7 +192,9 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	// This is the signal we don't want to block when waiting responses, since
 	// it will be the one that the congress and tribune will send
 	sigdelset(&mask, SIGUSR1);
-	// We wait until the parent finishes up the metadata
+	write_metadata('P');
+	kill(master, SIGUSR1);
+	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
 	process_metadata();
 
@@ -226,14 +235,14 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						char * to_id;
 						char response;
 						char * line;
-						while (!feof(PRESIDENT_REQUESTS_F)) {
+						while (feof(PRESIDENT_REQUESTS_F)) {
 							fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 							parse_request(line, from_id, to_id, &response);
 							int from = atoi(from_id);
 							// We are searching the request that was sent by
 							// the president.
 							if (from == exec_id) {
-								if (response = '0') success = 0;
+								if (response == '0') success = 0;
 								break;
 							} 
 						}
@@ -252,7 +261,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						char * to_id;
 						char response;
 						char * line;
-						while (!feof(PRESIDENT_REQUESTS_F)) {
+						while (feof(PRESIDENT_REQUESTS_F)) {
 							fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 							parse_request(line, from_id, to_id, &response);
 							int from = atoi(from_id);
@@ -273,7 +282,15 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					}
 				}
 				else if (!strcmp(keyword, asignar) && success) {
-					
+					// Asigna esta tarea a un ministro
+
+					fork();
+					if (exec_id == getpid()) {
+
+					}
+					else {
+
+					}
 				}
 				else if (!strcmp(keyword, exclusivo) && success) {
 					
@@ -319,12 +336,6 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 			}
 		}
 	}
-	sem_wait(ministry_mutex);
-	//printf("%s\n", "I have control (P)");
-	sleep(5);
-	sem_post(ministry_mutex);
-
-	sem_close(ministry_mutex);
 	return 0;
 }
 
@@ -347,6 +358,11 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 	close(leg_press[0]);
 	close(press_leg[1]);
 	LEGISLATIVE_F = fopen("Legislativo.acc", "r+");
+	write_metadata('C');
+	kill(master, SIGUSR1);
+	// We wait until the parent tells us the metadata is ready
+	kill(getpid(), SIGSTOP);
+	process_metadata();
 
 	// Task management
 	while (1) {
@@ -441,6 +457,11 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	close(jud_leg[0]);
 	close(jud_press[0]);
 	JUDICIAL_F = fopen("Judicial.acc", "r+");
+	write_metadata('T');
+	kill(master, SIGUSR1);
+	// We wait until the parent tells us the metadata is ready
+	kill(getpid(), SIGSTOP);
+	process_metadata();
 
 	// Task Management
 	while (1) {
@@ -585,9 +606,27 @@ void parse_request(char * request, char * from, char * to, char * response) {
 	*response = request[j];
 }
 
+void write_metadata(const char C) {
+	sem_t * meta_mutex(METADATA_MUTEX, O_CREAT);
+	sem_wait(meta_mutex);
+	METADATA_F = fopen("Metadata.txt", "a+");
+	if (METADATA_F) {
+		fprintf(stderr, "%s\n", "Unable to locate file Metadata.txt");
+		exit(1);
+	}
+	fprintf(METADATA_F, "%c %d\n", C, getpid());
+	fclose(METADATA_F);
+	sem_post(meta_mutex);
+	sem_close(meta_mutex);
+}
+
 void process_metadata() {
 	METADATA_F = fopen("Metadata.txt", "r");
-	for(char * line = fgets(line, LINE_LEN, METADATA_F); !feof(METADATA_F); line = fgets(line, LINE_LEN, METADATA_F)) {
+	if (METADATA_F == NULL) {
+		fprintf(stderr, "%s\n", "Could not locate file: Metadata.txt");
+		exit(1);
+	}
+	for(char * line = fgets(line, LINE_LEN, METADATA_F); feof(METADATA_F); line = fgets(line, LINE_LEN, METADATA_F)) {
 		if (line[0] = 'P') {
 			line += 2;
 			exec_id = atoi(line);
