@@ -611,7 +611,7 @@ void parse_request(char * request, char * from, char * to, char * response) {
 }
 
 void write_metadata(const char C) {
-	sem_t * meta_mutex(METADATA_MUTEX, O_CREAT);
+	sem_t * meta_mutex = sem_open(METADATA_MUTEX, O_CREAT);
 	sem_wait(meta_mutex);
 	METADATA_F = fopen("Metadata.txt", "a+");
 	if (METADATA_F) {
