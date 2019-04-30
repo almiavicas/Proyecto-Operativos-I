@@ -139,6 +139,7 @@ int main(int argc, char const *argv[]) {
 	sigsuspend(&mask);
 	sigsuspend(&mask);
 	sigsuspend(&mask);
+	printf("%s\n", "My childs are ready for metadata");
 	process_metadata();
 	kill(exec_id, SIGCONT);
 	kill(leg_id, SIGCONT);
@@ -196,6 +197,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	kill(master, SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
+	printf("%s\n", "Daddy woke me up");
 	process_metadata();
 
 	// Task management
@@ -362,6 +364,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 	kill(master, SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
+	printf("%s\n", "Daddy woke me up");
 	process_metadata();
 
 	// Task management
@@ -461,6 +464,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	kill(master, SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
+	printf("%s\n", "Daddy woke me up");
 	process_metadata();
 
 	// Task Management
