@@ -134,20 +134,14 @@ int main(int argc, char const *argv[]) {
 			}
 		}
 	}
-	sigset_t mask;
-	sigset_t old_mask;
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGUSR1);
-	sigprocmask(SIG_BLOCK, &mask, &old_mask);
-	sigsuspend(&old_mask);
+	kill(master, SIGSTOP);
 	printf("%s\n", "Received a signal from a child");
 	fflush(stdout);
-	sigsuspend(&old_mask);
+	kill(master, SIGSTOP);
 	printf("%s\n", "Received a signal from a child");
 	fflush(stdout);
-	sigsuspend(&old_mask);
+	kill(master, SIGSTOP);
 	printf("%s\n", "My childs are ready for metadata");
-	sigprocmask(SIG_UNBLOCK, &mask, NULL);
 	fflush(stdout);
 	process_metadata();
 	kill(exec_id, SIGCONT);
@@ -206,7 +200,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	write_metadata('P');
 	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
 	fflush(stdout);
-	kill(master, SIGUSR1);
+	kill(master, SIGCONT);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
@@ -238,9 +232,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						kill(leg_id, SIGUSR1);
 						// We wait until the congress responds. We
 						// suspend this process until SIGUSR1 is caught by it
-						sigprocmask(SIG_BLOCK, &mask, &old_mask);
-						sigsuspend(&mask);
-						sigprocmask(SIG_UNBLOCK, &mask, NULL);
+						kill(exec_id, SIGSTOP);
 						// At this point, the default sigset_t configuration of
 						// the process will restore itself.
 						// Now we check what the congress answered
@@ -379,7 +371,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 	write_metadata('C');
 	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
 	fflush(stdout);
-	kill(master, SIGUSR1);
+	kill(master, SIGCONT);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
@@ -481,7 +473,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	write_metadata('T');
 	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
 	fflush(stdout);
-	kill(master, SIGUSR1);
+	kill(master, SIGCONT);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
@@ -571,8 +563,6 @@ static void sig_handler_leg_usr1(int signal) {
 			int success = accepted(congress.success_rate);
 			// Send the answer to president
 			send_president_request(exec_id, exec_id, success);
-			// Tell the president we answered
-			kill(exec_id, SIGUSR1);
 		}
 		else if (line[1] = 'S') {
 
@@ -587,8 +577,9 @@ static void sig_handler_leg_usr1(int signal) {
 	else {
 		// The congress doesn't exists, the action fails
 		send_president_request(exec_id, exec_id, 0);
-		kill(exec_id, SIGUSR1);
 	}
+	// Tell the president we answered
+	kill(exec_id, SIGCONT);
 }
 
 static void sig_handler_leg_usr2(int signal) {
