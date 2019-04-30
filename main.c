@@ -138,7 +138,9 @@ int main(int argc, char const *argv[]) {
 	sigdelset(&mask, SIGUSR1);
 	sigdelset(&mask, SIGINT);
 	sigsuspend(&mask);
+	printf("%s\n", "Received a signal from a child");
 	sigsuspend(&mask);
+	printf("%s\n", "Received a signal from a child");
 	sigsuspend(&mask);
 	printf("%s\n", "My childs are ready for metadata");
 	process_metadata();
@@ -194,6 +196,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	// This is the signal we don't want to block when waiting responses, since
 	// it will be the one that the congress and tribune will send
 	sigdelset(&mask, SIGUSR1);
+	sigdelset(&mask, SIGINT);
 	write_metadata('P');
 	kill(master, SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
