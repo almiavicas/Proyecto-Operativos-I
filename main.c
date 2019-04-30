@@ -201,7 +201,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	sigdelset(&mask, SIGUSR1);
 	sigdelset(&mask, SIGINT);
 	write_metadata('P');
-	kill(master, SIGUSR1);
+	kill(getppid(), SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
