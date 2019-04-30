@@ -55,6 +55,7 @@ int press_leg[2];
 
 int main(int argc, char const *argv[]) {
 	master = getpid();
+	printf("%s %d\n", "Parent id:", master);
 	pipe(ex_jud);
 	pipe(ex_leg);
 	pipe(leg_jud);
@@ -135,9 +136,8 @@ int main(int argc, char const *argv[]) {
 	}
 	sigset_t mask;
 	sigset_t old_mask;
-	sigfillset(&mask);
-	sigdelset(&mask, SIGUSR1);
-	sigdelset(&mask, SIGINT);
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGUSR1);
 	sigprocmask(SIG_BLOCK, &mask, &old_mask);
 	sigsuspend(&old_mask);
 	printf("%s\n", "Received a signal from a child");
@@ -204,6 +204,8 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	sigdelset(&mask, SIGUSR1);
 	sigdelset(&mask, SIGINT);
 	write_metadata('P');
+	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
+	fflush(stdout);
 	kill(master, SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
@@ -375,6 +377,8 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 	close(press_leg[1]);
 	LEGISLATIVE_F = fopen("Legislativo.acc", "r+");
 	write_metadata('C');
+	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
+	fflush(stdout);
 	kill(master, SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
@@ -475,6 +479,8 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	close(jud_press[0]);
 	JUDICIAL_F = fopen("Judicial.acc", "r+");
 	write_metadata('T');
+	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
+	fflush(stdout);
 	kill(master, SIGUSR1);
 	// We wait until the parent tells us the metadata is ready
 	kill(getpid(), SIGSTOP);
