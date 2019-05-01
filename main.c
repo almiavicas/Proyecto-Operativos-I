@@ -133,16 +133,11 @@ int main(int argc, char const *argv[]) {
 				return judicial_task((jud_id = getpid()), ex_jud, leg_jud, jud_leg, jud_press);
 			}
 		}
+		kill(master, SIGSTOP);
+		printf("%s\n", "Received a signal from a child");
 	}
-	kill(master, SIGSTOP);
-	printf("%s\n", "Received a signal from a child");
-	fflush(stdout);
-	kill(master, SIGSTOP);
-	printf("%s\n", "Received a signal from a child");
-	fflush(stdout);
-	kill(master, SIGSTOP);
+	sleep(1);
 	printf("%s\n", "My childs are ready for metadata");
-	fflush(stdout);
 	process_metadata();
 	kill(exec_id, SIGCONT);
 	kill(leg_id, SIGCONT);
