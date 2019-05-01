@@ -142,7 +142,7 @@ int main(int argc, char const *argv[]) {
 	kill(exec_id, SIGCONT);
 	kill(leg_id, SIGCONT);
 	kill(jud_id, SIGCONT);
-	
+	return 0;
 	int num_actions = 0;
 	int max_actions = atoi(argv[2]);
 	while (num_actions < max_actions) {
@@ -200,6 +200,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
 	process_metadata();
+	return 0;
 
 	// Task management
 	while (1) {
@@ -371,7 +372,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
 	process_metadata();
-
+	return 0;
 	// Task management
 	while (1) {
 		while (feof(LEGISLATIVE_F)) {
@@ -473,7 +474,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
 	process_metadata();
-
+	return 0;
 	// Task Management
 	while (1) {
 		while (feof(JUDICIAL_F)) {
