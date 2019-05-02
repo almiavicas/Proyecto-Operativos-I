@@ -360,8 +360,16 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					fprintf(stderr, "%s\n", "Error reading file Ejecutivo.acc");
 					return -1;
 				}
-				if (success) success = accepted(president.success_rate);
-				if 
+				if (success == 1) success = accepted(president.success_rate);
+				if (success == 2) {
+					// We did not finish of reading the action, so we need to
+					// advance until the next action shows or EOF
+					for (char * line = fgets(line, LINE_LEN, EXECUTIVE_F); 
+						line[0] != '\n' && line[0] != '\0';
+						line = fgets(line, LINE_LEN, EXECUTIVE_F));
+				}
+				// In this case, we only nead to read the next empty line;
+				else fgets(keyword, LINE_LEN, EXECUTIVE_F);
 			}
 		}
 	}
