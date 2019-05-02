@@ -13,7 +13,7 @@
 #define LEGISLATIVE_SEM "leg_sem"
 #define JUDICIAL_SEM "jud_sem"
 #define REQUEST_SEM "req_sem"
-#define LINE_LEN 100
+#define LINE_LEN 150
 
 const char aprobacion[] = "aprobacion";
 const char reprobacion[] = "reprobacion";
@@ -27,6 +27,7 @@ const char nombrar[] = "nombrar";
 const char destituir[] = "destituir";
 const char disolver[] = "disolver";
 const char censurar[] = "censurar";
+const char crear[] = "crear";
 const char renuncia[] = "renuncia";
 const char exito[] = "exito";
 const char fracaso[] = "fracaso";
@@ -206,11 +207,15 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	while (1) {
 		while (feof(EXECUTIVE_F)) {
 			action act;
+			long int action_start = ftell(EXECUTIVE_F);
 			act.name = fgets(act.name, LINE_LEN, EXECUTIVE_F);
 			int end = 0;
+			// The success variable can have 3 states in the executive power:
+			// 	0 -> means unsuccessful
+			// 	1 -> means successful
+			// 	2 -> means the action was sent to a minister, so no printing.
 			int success = 1;
-			while (1) {
-				if (end) break;
+			while (!end) {
 				char * keyword = read_keyword(EXECUTIVE_F);
 				char * value = fgets(value, LINE_LEN, EXECUTIVE_F);
 				while(value[0] = ' ') ++value;
@@ -227,7 +232,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						// We interrupt the congress to tell them to answer us
 						kill(leg_id, SIGUSR1);
 						// We wait until the congress responds. We
-						// suspend this process until SIGUSR1 is caught by it
+						// suspend this process until SIGCONT is caught by it
 						kill(exec_id, SIGSTOP);
 						// At this point, the default sigset_t configuration of
 						// the process will restore itself.
@@ -289,14 +294,30 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				}
 				else if (!strcmp(keyword, asignar) && success) {
 					// Asigna esta tarea a un ministro
-
-					fork();
-					if (exec_id == getpid()) {
-
+					sem_wait(ministry_mutex);
+					MINISTRIES_F = fopen("Ministros.txt", "r+");
+					int found = 0;
+					while(!feof(MINISTRIES_F)) {
+						char * line;
+						fgets(line, LINE_LEN, MINISTRIES_F);
+						int equal = 1;
+						for (int i = 0; i < strlen(value) && equal; i++) {
+							if (value[i] != line[i]) equal = 0;
+						}
+						if (equal) {
+							found = 1;
+							// We move the cursor to after the '|' char
+							char c;
+							while ((c = fgetc(MINISTRIES_F)) != '|') fseek(MINISTRIES_F, ftell(MINISTRIES_F) - 2, SEEK_SET);
+							fprintf(MINISTRIES_F, "%s", act.name);
+							break;
+						}
 					}
-					else {
-
-					}
+					fclose(MINISTRIES_F);
+					sem_post(ministry_mutex);
+					if (!found) success = 0;
+					else success = 2;
+					end = 1;
 				}
 				else if (!strcmp(keyword, exclusivo) && success) {
 					
@@ -339,6 +360,8 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					fprintf(stderr, "%s\n", "Error reading file Ejecutivo.acc");
 					return -1;
 				}
+				if (success) success = accepted(president.success_rate);
+				if 
 			}
 		}
 	}
@@ -560,12 +583,6 @@ static void sig_handler_leg_usr1(int signal) {
 			// Send the answer to president
 			send_president_request(exec_id, exec_id, success);
 		}
-		else if (line[1] = 'S') {
-
-		}
-		else if (line[1] = 'N') {
-
-		}
 		else {
 			fprintf(stderr, "%s\n", "Error in pipes communication");
 		}
@@ -593,7 +610,6 @@ static void sig_handler_jud_usr2(int signal) {
 
 void send_president_request(pid_t from, pid_t to, int result) {
 	sem_t * req_mutex = sem_open(REQUEST_SEM, O_CREAT);
-	request req = *create_request(from, to, result);
 	sem_wait(req_mutex);
 	PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "a+");
 	if (PRESIDENT_REQUESTS_F == NULL) {
