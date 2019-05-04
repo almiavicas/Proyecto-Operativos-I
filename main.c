@@ -297,7 +297,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				}
 				else if (!strcmp(keyword, crear) && success) {
 					sem_wait(ministry_mutex);
-					if (success = accepted(president.success)) {
+					if (success = accepted(president.success_rate)) {
 						init_ministry(value);
 						fork();
 						if (getpid() != exec_id) return ministry_task(getpid());
@@ -599,7 +599,7 @@ void init_ministry(char * name) {
 	}
 	fprintf(MINISTRIES_F, "%s|%s|%s\n", bksp100, bksp50, bksp100);
 	fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp100) + strlen(bksp50) + 3), SEEK_CUR);
-	printf(MINISTRIES_F, "%s\n", name);
+	fprintf(MINISTRIES_F, "%s\n", name);
 	fclose(MINISTRIES_F);
 }
 
@@ -610,7 +610,7 @@ static int ministry_task(pid_t id){
 	char * line;
 	while (feof(MINISTRIES_F)) line = fgets(line, LINE_LEN, MINISTRIES_F);
 	char * name = line;
-	while (line != ' ') line++;
+	while (line[0] != ' ') line++;
 	*line = '\0';
 	mi.name = name;
 	fclose(MINISTRIES_F);
@@ -633,11 +633,13 @@ static int ministry_task(pid_t id){
 					continue;
 				}
 				else {
-					char * action = line[152];
+					char * action = line + 152;
 					while (line[152] != ' ') line++;
 					line[152] = '\0';
 					if (!strcmp(action, end_task)) {
-						fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp100) + strlen(50) + 3), SEEK_CUR);
+						fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp100) + strlen(bksp50) + 3), SEEK_CUR);
+						fprintf(MINISTRIES_F, "%c\n", '#');
+						return 0;
 					}
 					else {
 						// We have to execute the action that the president assigned for us. 
