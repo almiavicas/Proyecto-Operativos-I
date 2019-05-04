@@ -639,6 +639,9 @@ static int ministry_task(pid_t id){
 					if (!strcmp(action, end_task)) {
 						fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp100) + strlen(50) + 3), SEEK_CUR);
 					}
+					else {
+						// We have to execute the action that the president assigned for us. 
+					}
 				}
 		}
 		fclose(MINISTRIES_F);
