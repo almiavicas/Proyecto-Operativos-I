@@ -47,6 +47,8 @@ legislative * create_legislative(pid_t id);
 
 judicial * create_judicial(pid_t id);
 
+void init_ministry(char * name);
+
 ministry * create_ministry(pid_t id);
 
 request * create_request(pid_t from, pid_t to, pid_t value);

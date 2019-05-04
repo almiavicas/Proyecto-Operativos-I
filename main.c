@@ -13,7 +13,7 @@
 #define LEGISLATIVE_SEM "leg_sem"
 #define JUDICIAL_SEM "jud_sem"
 #define REQUEST_SEM "req_sem"
-#define LINE_LEN 150
+#define LINE_LEN 250
 
 const char aprobacion[] = "aprobacion";
 const char reprobacion[] = "reprobacion";
@@ -34,6 +34,9 @@ const char fracaso[] = "fracaso";
 const char presidente[] = "Presidente";
 const char congreso[] = "Congreso";
 const char tribunal[] = "Tribunal Supremo";
+const char end_task[] = "END_TASK";
+const char bksp50[] = "                                                  ";
+const char bksp100[] = "                                                                                                    ";
 
 FILE * EXECUTIVE_F;
 FILE * LEGISLATIVE_F;
@@ -292,12 +295,22 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						return -1;
 					}
 				}
+				else if (!strcmp(keyword, crear) && success) {
+					sem_wait(ministry_mutex);
+					if (success = accepted(president.success)) {
+						init_ministry(value);
+						fork();
+						if (getpid() != exec_id) return ministry_task(getpid());
+					}
+					
+					sem_post(ministry_mutex);
+				}
 				else if (!strcmp(keyword, asignar) && success) {
 					// Asigna esta tarea a un ministro
 					sem_wait(ministry_mutex);
 					MINISTRIES_F = fopen("Ministros.txt", "r+");
 					int found = 0;
-					while(!feof(MINISTRIES_F)) {
+					while(feof(MINISTRIES_F)) {
 						char * line;
 						fgets(line, LINE_LEN, MINISTRIES_F);
 						int equal = 1;
@@ -480,6 +493,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 	sem_close(ministry_mutex);
 	return 0;
 }
+
 static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2], int jud_press[2]){
 	tribune = *create_judicial(id);
 	struct sigaction act;
@@ -576,8 +590,59 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	return 0;
 }
 
+void init_ministry(char * name) {
+	MINISTRIES_F = fopen("Ministros.txt", "a+");
+	if (MINISTRIES_F == NULL) {
+		fprintf(stderr, "%s\n", "File not found: Ministros.txt");
+		// TO DO:
+		// Tell the parent to kill everyone
+	}
+	fprintf(MINISTRIES_F, "%s|%s|%s\n", bksp100, bksp50, bksp100);
+	fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp100) + strlen(bksp50) + 3), SEEK_CUR);
+	printf(MINISTRIES_F, "%s\n", name);
+	fclose(MINISTRIES_F);
+}
+
 static int ministry_task(pid_t id){
+	// Initial configuration
 	ministry mi = *create_ministry(id);
+	MINISTRIES_F = fopen("Ministros.txt", "r");
+	char * line;
+	while (feof(MINISTRIES_F)) line = fgets(line, LINE_LEN, MINISTRIES_F);
+	char * name = line;
+	while (line != ' ') line++;
+	*line = '\0';
+	mi.name = name;
+	fclose(MINISTRIES_F);
+
+	// Task management
+	while(1) {
+		MINISTRIES_F = fopen("Ministros.txt", "r");
+		while (feof(MINISTRIES_F)) {
+			char * line = fgets(line, LINE_LEN, MINISTRIES_F);
+			int same = 1;
+			for (int i = 0; i < strlen(mi.name) && same; i++) {
+				if (mi.name[i] != line[i]) same = 0;
+			}
+			if (same) {
+				// Check if a task is currently assigned. The char where the
+				// task name starts is the one in the 152th char. So we need to
+				// Check if that char is a blank space or not
+				if (line[152] != ' ') {
+					// no action assigned
+					continue;
+				}
+				else {
+					char * action = line[152];
+					while (line[152] != ' ') line++;
+					line[152] = '\0';
+					if (!strcmp(action, end_task)) {
+						fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp100) + strlen(50) + 3), SEEK_CUR);
+					}
+				}
+		}
+		fclose(MINISTRIES_F);
+	}
 	return 0;
 }
 
