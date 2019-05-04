@@ -645,8 +645,9 @@ static int ministry_task(pid_t id){
 						// We have to execute the action that the president assigned for us. 
 					}
 				}
+			}
+			fclose(MINISTRIES_F);
 		}
-		fclose(MINISTRIES_F);
 	}
 	return 0;
 }
