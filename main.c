@@ -7,14 +7,18 @@
 #include <fcntl.h>
 #include "structs.c"
 
+#define LINE_LEN 250
 #define METADATA_MUTEX "metadata_mutex"
 #define MINISTRY_MUTEX "ministry_mutex"
 #define EXECUTIVE_SEM "exec_sem"
 #define LEGISLATIVE_SEM "leg_sem"
 #define JUDICIAL_SEM "jud_sem"
 #define REQUEST_SEM "req_sem"
-#define LINE_LEN 250
 
+
+const char file_exec[] = "Ejecutivo.acc";
+const char file_leg[] = "Legislativo.acc";
+const char file_jud[] = "Judicial.acc";
 const char aprobacion[] = "aprobacion";
 const char reprobacion[] = "reprobacion";
 const char asignar[] = "asignar";
@@ -89,9 +93,9 @@ int main(int argc, char const *argv[]) {
 	close(jud_press[1]);
 	close(press_leg[0]);
 
-	EXECUTIVE_F = fopen("Ejecutivo.acc", "r+");
+	EXECUTIVE_F = fopen(file_exec, "r+");
 	if (EXECUTIVE_F == NULL) {
-		fprintf(stderr, "%s\n", "File not found: Ejecutivo.acc");
+		fprintf(stderr, "%s %s\n", "File not found:", file_exec);
 		return 1;
 	}
 	fclose(EXECUTIVE_F);
@@ -189,7 +193,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	close(ex_jud[0]);
 	close(ex_leg[0]);
 	close(ex_press[0]);
-	EXECUTIVE_F = fopen("Ejecutivo.acc", "r+");
+	EXECUTIVE_F = fopen(file_exec, "r+");
 	sigset_t mask, old_mask;
 	sigfillset(&mask);
 	// This is the signal we don't want to block when waiting responses, since
@@ -213,6 +217,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 			long int action_start = ftell(EXECUTIVE_F);
 			act.name = fgets(act.name, LINE_LEN, EXECUTIVE_F);
 			int end = 0;
+			FILE * opened_file;
 			// The success variable can have 3 states in the executive power:
 			// 	0 -> means unsuccessful
 			// 	1 -> means successful
@@ -223,7 +228,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				char * value = fgets(value, LINE_LEN, EXECUTIVE_F);
 				while(value[0] = ' ') ++value;
 				if (keyword == NULL) {
-					fprintf(stderr, "%s\n", "Error reading file Ejecutivo.acc");
+					fprintf(stderr, "%s\n", "Error reading filefile_exec);
 					return -1;
 				}
 				if (!(strcmp(keyword, aprobacion) && strcmp(keyword, reprobacion)) && success) {
@@ -321,7 +326,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 							found = 1;
 							// We move the cursor to after the '|' char
 							char c;
-							while ((c = fgetc(MINISTRIES_F)) != '|') fseek(MINISTRIES_F, ftell(MINISTRIES_F) - 2, SEEK_SET);
+							while ((c = fgetc(MINISTRIES_F)) != '|') fseek(MINISTRIES_F, -2, SEEK_CUR);
 							fprintf(MINISTRIES_F, "%s", act.name);
 							break;
 						}
@@ -333,7 +338,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					end = 1;
 				}
 				else if (!strcmp(keyword, exclusivo) && success) {
-					
+					if (opened_file != NULL) fclose(opened_file);
 				}
 				else if (!strcmp(keyword, inclusivo) && success) {
 					
@@ -370,7 +375,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					end = 1;
 				}
 				else {
-					fprintf(stderr, "%s\n", "Error reading file Ejecutivo.acc");
+					fprintf(stderr, "%s\n", "Error reading filefile_exec);
 					return -1;
 				}
 				if (success == 1) success = accepted(president.success_rate);
