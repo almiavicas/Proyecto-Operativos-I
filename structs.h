@@ -1,6 +1,7 @@
 #include <signal.h>
 #include "ordered_list.c"
 #define NAME_LEN 40
+#define LINE_LEN 250
 
 typedef struct {
 	pid_t from;
@@ -82,3 +83,5 @@ void parse_request(char * request, char * from, char * to, char *response);
 void write_metadata(const char C);
 
 void process_metadata(void);
+
+int find_string(char * string, FILE * f);
