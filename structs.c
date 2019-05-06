@@ -127,3 +127,23 @@ int accepted(float success_rate) {
 void write_pipe(const char msg[], int pipe[2]) {
 	write(pipe[1], msg, strlen(msg) + 1);
 }
+
+int find_string(char * string, FILE * f) {
+	int current_cursor = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	for (char * line = fgets(line, LINE_LEN, f); feof(f); line = fgets(line, LINE_LEN, f)) {
+		for (int i = 0; i < strlen(line); i++) {
+			if (strlen(line) - i < strlen(string)) break;
+			int same = line[i] == string[0];
+			for (int j = 1; j < strlen(string) && same; j++) {
+				same = line[i + j] == string[j];
+			}
+			if (same) {
+				fseek(f, current_cursor, SEEK_SET);
+				return 1;
+			}
+		}
+	}
+	fseek(f, current_cursor, SEEK_SET);
+	return 0;
+}
