@@ -7,12 +7,17 @@
 #include <fcntl.h>
 #include "structs.c"
 
-#define LINE_LEN 250
+
 #define METADATA_MUTEX "metadata_mutex"
 #define MINISTRY_MUTEX "ministry_mutex"
-#define EXECUTIVE_SEM "exec_sem"
-#define LEGISLATIVE_SEM "leg_sem"
-#define JUDICIAL_SEM "jud_sem"
+// Semaphores to activate the press
+#define EXECUTIVE_PRINT_SEM "exec_sem"
+#define LEGISLATIVE_PRINT_SEM "leg_sem"
+#define JUDICIAL_PRINT_SEM "jud_sem"
+// Semaphores to 'exclusivo/inclusivo' actions
+#define EXECUTIVE_MUTEX "exec_print_sem"
+#define LEGISLATIVE_MUTEX "legislative_mutex"
+#define JUDICIAL_MUTEX "judicial_mutex"
 #define REQUEST_SEM "req_sem"
 
 
@@ -77,16 +82,21 @@ int main(int argc, char const *argv[]) {
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// These mutexes are for the press process. When they are unlocked, The
 	// press reads from its corresponding pipe and prints
-	sem_t *exec_mutex = sem_open(EXECUTIVE_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
-	sem_t *leg_mutex = sem_open(LEGISLATIVE_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
-	sem_t *jud_mutex = sem_open(JUDICIAL_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+	sem_t *exec_print_sem = sem_open(EXECUTIVE_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+	sem_t *leg_print_sem = sem_open(LEGISLATIVE_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+	sem_t *jud_print_sem = sem_open(JUDICIAL_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *req_mutex = sem_open(REQUEST_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	sem_t *meta_mutex = sem_open(METADATA_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	sem_t *exec_mutex = sem_open(EXECUTIVE_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	sem_t *leg_mutex = sem_open(LEGISLATIVE_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	sem_t *jud_mutex = sem_open(JUDICIAL_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// sem_init() is used for threads
 	sem_close(ministry_mutex);
 	sem_close(req_mutex);
 	sem_close(meta_mutex);
-	
+	sem_close(exec_mutex);
+	sem_close(leg_mutex);
+	sem_close(jud_mutex);
 	// Pipes config for press
 	close(ex_press[1]);
 	close(leg_press[1]);
@@ -99,13 +109,13 @@ int main(int argc, char const *argv[]) {
 		return 1;
 	}
 	fclose(EXECUTIVE_F);
-	LEGISLATIVE_F = fopen("Legislativo.acc", "r+");
+	LEGISLATIVE_F = fopen(file_leg, "r+");
 	if (LEGISLATIVE_F == NULL) {
 		fprintf(stderr, "%s\n", "File not found: Legislativo.acc");
 		return 1;
 	}
 	fclose(LEGISLATIVE_F);
-	JUDICIAL_F = fopen("Judicial.acc", "r+");
+	JUDICIAL_F = fopen(file_jud, "r+");
 	if (JUDICIAL_F == NULL) {
 		fprintf(stderr, "%s\n", "File not found: Judicial.acc");
 		return 1;
@@ -154,17 +164,17 @@ int main(int argc, char const *argv[]) {
 	int num_actions = 0;
 	int max_actions = atoi(argv[2]);
 	while (num_actions < max_actions) {
-		if (sem_trywait(exec_mutex) == 0) {
+		if (sem_trywait(exec_print_sem) == 0) {
 			// Read from ex_press pipe
-
+			num_actions++;
 		}
-		if (sem_trywait(leg_mutex) == 0) {
+		if (sem_trywait(leg_print_sem) == 0) {
 			// Read from leg_press pipe
-
+			num_actions++;
 		}
-		if (sem_trywait(jud_mutex) == 0) {
+		if (sem_trywait(jud_print_sem) == 0) {
 			// Read from jud_press pipe
-
+			num_actions++;
 		}
 		usleep(50);
 	}
@@ -173,16 +183,19 @@ int main(int argc, char const *argv[]) {
 	kill(leg_id, SIGTERM);
 	kill(jud_id, SIGTERM);
 
-	sem_close(exec_mutex);
-	sem_close(leg_mutex);
-	sem_close(jud_mutex);
+	sem_close(exec_print_sem);
+	sem_close(leg_print_sem);
+	sem_close(jud_print_sem);
 
 	sem_unlink(MINISTRY_MUTEX);
-	sem_unlink(EXECUTIVE_SEM);
-	sem_unlink(LEGISLATIVE_SEM);
-	sem_unlink(JUDICIAL_SEM);
+	sem_unlink(EXECUTIVE_PRINT_SEM);
+	sem_unlink(LEGISLATIVE_PRINT_SEM);
+	sem_unlink(JUDICIAL_PRINT_SEM);
 	sem_unlink(REQUEST_SEM);
 	sem_unlink(METADATA_MUTEX);
+	sem_unlink(EXECUTIVE_MUTEX);
+	sem_unlink(LEGISLATIVE_MUTEX);
+	sem_unlink(JUDICIAL_MUTEX);
 	return 0;
 }
 
@@ -218,6 +231,13 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 			act.name = fgets(act.name, LINE_LEN, EXECUTIVE_F);
 			int end = 0;
 			FILE * opened_file;
+			sem_t * mutex;
+			// the next int is to manage the mutex behaviour. -1 means
+			// uninitialized, 1 means exclusive and 0 means inclusive
+			int exclusive_sem = -1;
+			// This int tells us if we have written in the file. If that
+			// happens, we will have to add a new line at the end of file
+			int wrote = 0;
 			// The success variable can have 3 states in the executive power:
 			// 	0 -> means unsuccessful
 			// 	1 -> means successful
@@ -228,7 +248,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				char * value = fgets(value, LINE_LEN, EXECUTIVE_F);
 				while(value[0] = ' ') ++value;
 				if (keyword == NULL) {
-					fprintf(stderr, "%s\n", "Error reading filefile_exec);
+					fprintf(stderr, "%s %s\n", "Error reading file:", file_exec);
 					return -1;
 				}
 				if (!(strcmp(keyword, aprobacion) && strcmp(keyword, reprobacion)) && success) {
@@ -338,19 +358,87 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					end = 1;
 				}
 				else if (!strcmp(keyword, exclusivo) && success) {
-					if (opened_file != NULL) fclose(opened_file);
+					if (opened_file != NULL) {
+						if (wrote) fprintf(opened_file, "\n");
+						fclose(opened_file);
+					}
+					if (exclusive_sem == 1) {
+						// If the last mutex was exclusive, we need to post and close
+						sem_post(mutex);
+						sem_close(mutex);
+					}
+					// If the las mutex was inclusive, we need only to close it
+					else if (exclusive_sem == 0) sem_close(mutex);
+
+					if (!strcmp(value, file_exec)) {
+						mutex = sem_open(EXECUTIVE_MUTEX, O_CREAT);
+					}
+					else if (!strcmp(value, file_leg)) {
+						mutex = sem_open(LEGISLATIVE_MUTEX, O_CREAT);
+					}
+					else if (!strcmp(value, file_jud)) {
+						mutex = sem_open(JUDICIAL_MUTEX, O_CREAT);
+					}
+					else {
+						fprintf(stderr, "%s %s\n", "Error reading action in file:", file_exec);
+						return -1;
+					}
+					// need to wait in case other process is locking the file
+					sem_wait(mutex);
+					opened_file = fopen(value, "r+");
+					if (opened_file == NULL) {
+						fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
+						// TO DO: tell the parent to kill everyone
+						return -1;
+					}
+					exclusive_sem = 1;
 				}
 				else if (!strcmp(keyword, inclusivo) && success) {
-					
+					if (opened_file != NULL) {
+						if (wrote) fprintf(opened_file, "\n");
+						fclose(opened_file);
+					}
+					if (exclusive_sem == 1) {
+						sem_post(mutex);
+						sem_close(mutex);
+					}
+					else if (exclusive_sem == 0) sem_close(mutex);
+					if (!strcmp(value, file_exec)) {
+						mutex = sem_open(EXECUTIVE_MUTEX, O_CREAT);
+					}
+					else if (!strcmp(value, file_leg)) {
+						mutex = sem_open(LEGISLATIVE_MUTEX, O_CREAT);
+					}
+					else if (!strcmp(value, file_jud)) {
+						mutex = sem_open(JUDICIAL_MUTEX, O_CREAT);
+					}
+					else {
+						fprintf(stderr, "%s %s\n", "Error reading action in file:", file_exec);
+						return -1;
+					}
+					// need to wait in case other process is locking the file
+					sem_wait(mutex);
+					// We post inmediatly so anyone else can enter the file
+					sem_post(mutex);
+					opened_file = fopen(value, "r+");
+					if (opened_file == NULL) {
+						fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
+						// TO DO: tell the parent to kill everyone
+						return -1;
+					}
+					exclusive_sem = 0;
 				}
 				else if (!strcmp(keyword, leer) && success) {
-					
+					if (!find_string(value, opened_file)) success = 0;
 				}
 				else if (!strcmp(keyword, escribir) && success) {
-					
+					int curr_cursor = ftell(opened_file);
+					fseek(opened_file, 0, SEEK_END);
+					fprintf(opened_file, "%s\n", value);
+					wrote = 1;
 				}
 				else if (!strcmp(keyword, anular) && success) {
-					
+					if (find_string(value, opened_file)) success = 0;
 				}
 				else if (!strcmp(keyword, nombrar) && success) {
 					
@@ -375,10 +463,10 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					end = 1;
 				}
 				else {
-					fprintf(stderr, "%s\n", "Error reading filefile_exec);
+					fprintf(stderr, "%s %s\n", "Error reading action in file:", file_exec);
 					return -1;
 				}
-				if (success == 1) success = accepted(president.success_rate);
+				
 				if (success == 2) {
 					// We did not finish of reading the action, so we need to
 					// advance until the next action shows or EOF
@@ -387,8 +475,11 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						line = fgets(line, LINE_LEN, EXECUTIVE_F));
 				}
 				// In this case, we only nead to read the next empty line;
-				else fgets(keyword, LINE_LEN, EXECUTIVE_F);
+				
 			}
+			if (success == 2) continue;
+			if (success == 1) success = accepted(president.success_rate);
+			fgets(keyword, LINE_LEN, EXECUTIVE_F);
 		}
 	}
 	return 0;
@@ -412,7 +503,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 	close(jud_leg[1]);
 	close(leg_press[0]);
 	close(press_leg[1]);
-	LEGISLATIVE_F = fopen("Legislativo.acc", "r+");
+	LEGISLATIVE_F = fopen(file_leg, "r+");
 	write_metadata('C');
 	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
 	fflush(stdout);
@@ -515,7 +606,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	close(leg_jud[1]);
 	close(jud_leg[0]);
 	close(jud_press[0]);
-	JUDICIAL_F = fopen("Judicial.acc", "r+");
+	JUDICIAL_F = fopen(file_jud, "r+");
 	write_metadata('T');
 	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
 	fflush(stdout);
