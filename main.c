@@ -345,9 +345,10 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						if (equal) {
 							found = 1;
 							// We move the cursor to after the '|' char
-							char c;
-							while ((c = fgetc(MINISTRIES_F)) != '|') fseek(MINISTRIES_F, -2, SEEK_CUR);
+							fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp50) + 2), SEEK_CUR);
 							fprintf(MINISTRIES_F, "%s", act.name);
+							fseek(MINISTRIES_F, strlen(bksp100) - strlen(act.name) + 1, SEEK_CUR);
+							fprintf(MINISTRIES_F, "%d\n", action_start);
 							break;
 						}
 					}
@@ -479,7 +480,6 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 			}
 			if (success == 2) continue;
 			if (success == 1) success = accepted(president.success_rate);
-			fgets(keyword, LINE_LEN, EXECUTIVE_F);
 		}
 	}
 	return 0;
@@ -693,8 +693,8 @@ void init_ministry(char * name) {
 		// TO DO:
 		// Tell the parent to kill everyone
 	}
-	fprintf(MINISTRIES_F, "%s|%s|%s\n", bksp100, bksp50, bksp100);
-	fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp100) + strlen(bksp50) + 3), SEEK_CUR);
+	fprintf(MINISTRIES_F, "%s|%s|%s|%s\n", bksp100, bksp50, bksp100, bksp50);
+	fseek(MINISTRIES_F, -((strlen(bksp100) * 2) + (strlen(bksp50) * 2) + 4), SEEK_CUR);
 	fprintf(MINISTRIES_F, "%s\n", name);
 	fclose(MINISTRIES_F);
 }
@@ -733,7 +733,7 @@ static int ministry_task(pid_t id){
 					while (line[152] != ' ') line++;
 					line[152] = '\0';
 					if (!strcmp(action, end_task)) {
-						fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp100) + strlen(bksp50) + 3), SEEK_CUR);
+						fseek(MINISTRIES_F, -((strlen(bksp100) * 2) + (strlen(bksp50) * 2) + 4), SEEK_CUR);
 						fprintf(MINISTRIES_F, "%c\n", '#');
 						return 0;
 					}
@@ -745,7 +745,7 @@ static int ministry_task(pid_t id){
 			fclose(MINISTRIES_F);
 		}
 	}
-	return 0;
+	return 1;
 }
 
 static void sig_handler_leg_usr1(int signal) {
