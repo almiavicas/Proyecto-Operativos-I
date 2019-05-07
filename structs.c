@@ -39,7 +39,7 @@ judicial * create_judicial(pid_t id) {
 	act.sa_handler = sig_handler_jud_usr2;
 	sigaction(SIGUSR2, &act, NULL);
 
-	float * magister = calloc(sizeof(float), 8);
+	float * magister = calloc(sizeof(float), 100);
 	if (magister == NULL) {
 		fprintf(stderr, "%s\n", "Not enought memory");
 		free(&(jud->success_rate));
@@ -48,7 +48,7 @@ judicial * create_judicial(pid_t id) {
 	}
 	float accum = 0;
 	for(int i = 0; i < 8; i++) {
-		magister[i] = rand();
+		magister[i] = 2.0f/3;
 		accum += magister[i];
 	}
 	jud->success_rate = accum / 8.0f;
