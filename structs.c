@@ -129,7 +129,7 @@ void write_pipe(const char msg[], int pipe[2]) {
 }
 
 int find_string(char * string, FILE * f) {
-	int current_cursor = ftell(f);
+	long int current_cursor = ftell(f);
 	fseek(f, 0, SEEK_SET);
 	for (char * line = fgets(line, LINE_LEN, f); feof(f); line = fgets(line, LINE_LEN, f)) {
 		for (int i = 0; i < strlen(line); i++) {
