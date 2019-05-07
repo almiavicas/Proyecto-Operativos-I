@@ -10,15 +10,11 @@
 
 #define METADATA_MUTEX "metadata_mutex"
 #define MINISTRY_MUTEX "ministry_mutex"
-// Semaphores to activate the press
-#define EXECUTIVE_PRINT_SEM "exec_sem"
-#define LEGISLATIVE_PRINT_SEM "leg_sem"
-#define JUDICIAL_PRINT_SEM "jud_sem"
-// Semaphores to 'exclusivo/inclusivo' actions
-#define EXECUTIVE_MUTEX "exec_print_sem"
-#define LEGISLATIVE_MUTEX "legislative_mutex"
-#define JUDICIAL_MUTEX "judicial_mutex"
 #define REQUEST_SEM "req_sem"
+// Semaphores to activate the press
+#define EXECUTIVE_PRINT_SEM "exec_print_sem"
+#define LEGISLATIVE_PRINT_SEM "leg_print_sem"
+#define JUDICIAL_PRINT_SEM "jud_print_sem"
 
 
 const char file_exec[] = "Ejecutivo.acc";
@@ -87,16 +83,13 @@ int main(int argc, char const *argv[]) {
 	sem_t *jud_print_sem = sem_open(JUDICIAL_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *req_mutex = sem_open(REQUEST_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	sem_t *meta_mutex = sem_open(METADATA_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
-	sem_t *exec_mutex = sem_open(EXECUTIVE_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
-	sem_t *leg_mutex = sem_open(LEGISLATIVE_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
-	sem_t *jud_mutex = sem_open(JUDICIAL_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	
 	// sem_init() is used for threads
 	sem_close(ministry_mutex);
 	sem_close(req_mutex);
 	sem_close(meta_mutex);
-	sem_close(exec_mutex);
-	sem_close(leg_mutex);
-	sem_close(jud_mutex);
+
+	
 	// Pipes config for press
 	close(ex_press[1]);
 	close(leg_press[1]);
@@ -193,9 +186,15 @@ int main(int argc, char const *argv[]) {
 	sem_unlink(JUDICIAL_PRINT_SEM);
 	sem_unlink(REQUEST_SEM);
 	sem_unlink(METADATA_MUTEX);
-	sem_unlink(EXECUTIVE_MUTEX);
-	sem_unlink(LEGISLATIVE_MUTEX);
-	sem_unlink(JUDICIAL_MUTEX);
+	FILE * sem_file = fopen("Semaforos.txt", "r");
+	if (sem_file == NULL) return 0;
+	else {
+		for (char * line = fgets(line, LINE_LEN, sem_file); feof(sem_file); line = fgets(line, LINE_LEN, sem_file)) {
+			line[strlen(line)-1] = '\0';
+			sem_unlink(line);
+		}
+	}
+	
 	return 0;
 }
 
@@ -246,6 +245,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 			while (!end) {
 				char * keyword = read_keyword(EXECUTIVE_F);
 				char * value = fgets(value, LINE_LEN, EXECUTIVE_F);
+				value[strlen(value)-1] = '\0';
 				while(value[0] = ' ') ++value;
 				if (keyword == NULL) {
 					fprintf(stderr, "%s %s\n", "Error reading file:", file_exec);
@@ -371,19 +371,8 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					// If the las mutex was inclusive, we need only to close it
 					else if (exclusive_sem == 0) sem_close(mutex);
 
-					if (!strcmp(value, file_exec)) {
-						mutex = sem_open(EXECUTIVE_MUTEX, O_CREAT);
-					}
-					else if (!strcmp(value, file_leg)) {
-						mutex = sem_open(LEGISLATIVE_MUTEX, O_CREAT);
-					}
-					else if (!strcmp(value, file_jud)) {
-						mutex = sem_open(JUDICIAL_MUTEX, O_CREAT);
-					}
-					else {
-						fprintf(stderr, "%s %s\n", "Error reading action in file:", file_exec);
-						return -1;
-					}
+					mutex= sem_open(value, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+					if (mutex == SEM_FAILED) mutex = sem_open(value, O_CREAT);
 					// need to wait in case other process is locking the file
 					sem_wait(mutex);
 					opened_file = fopen(value, "r+");
@@ -404,18 +393,13 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						sem_close(mutex);
 					}
 					else if (exclusive_sem == 0) sem_close(mutex);
-					if (!strcmp(value, file_exec)) {
-						mutex = sem_open(EXECUTIVE_MUTEX, O_CREAT);
-					}
-					else if (!strcmp(value, file_leg)) {
-						mutex = sem_open(LEGISLATIVE_MUTEX, O_CREAT);
-					}
-					else if (!strcmp(value, file_jud)) {
-						mutex = sem_open(JUDICIAL_MUTEX, O_CREAT);
-					}
+
+					mutex= sem_open(value, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+					if (mutex == SEM_FAILED) mutex = sem_open(value, O_CREAT);
 					else {
-						fprintf(stderr, "%s %s\n", "Error reading action in file:", file_exec);
-						return -1;
+						// Need to save the semaphore name to unlink at the end of execution
+						FILE * sem_file = fopen("Semaforos.txt", "a+");
+						fprintf(sem_file, "%s\n", value);
 					}
 					// need to wait in case other process is locking the file
 					sem_wait(mutex);
@@ -442,10 +426,39 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					if (find_string(value, opened_file)) success = 0;
 				}
 				else if (!strcmp(keyword, nombrar) && success) {
-					
+					// Nombra un ministro o magistrado
+					// Se asume que ya se ha pedido permiso al congreso
+					if (value[1] = 'a') {
+						// magistrado
+						write_pipe("PC", ex_jud);
+						kill(jud_id, SIGUSR1);
+					}
+					else {
+						// ministro
+						while (*(value++) != ' ');
+						while (*(value++) != ' ');
+						MINISTRIES_F = fopen("Ministros.txt", "r+");
+						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+							while (*(l++) != ' ');
+							while (*(l++) != ' ');
+							int same = 1;
+							for (int i = 0; i < strlen(value) && same; i++) {
+								if (l[i] != value[i]) same = 0;
+							}
+							if (same) {
+								// Encontramos el ministerio
+								fseek(MINISTRIES_F, strlen(l) + 1, SEEK_CUR);
+								fseek(MINISTRIES_F, strlen(bksp100) + 1, SEEK_CUR);
+								fprintf(MINISTRIES_F, "%s", value);
+								break;
+							}
+						}
+					}
 				}
 				else if (!strcmp(keyword, destituir) && success) {
-					
+					// Destituye un magistrado
+					write_pipe("PE", ex_jud);
+					kill(jud_id, SIGUSR1);
 				}
 				else if (!strcmp(keyword, disolver) && success) {
 					
@@ -551,9 +564,6 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 				else if (!strcmp(keyword, anular)) {
 					
 				}
-				else if (!strcmp(keyword, nombrar)) {
-					
-				}
 				else if (!strcmp(keyword, destituir)) {
 					
 				}
@@ -652,9 +662,6 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					
 				}
 				else if (!strcmp(keyword, anular)) {
-					
-				}
-				else if (!strcmp(keyword, nombrar)) {
 					
 				}
 				else if (!strcmp(keyword, destituir)) {
@@ -777,6 +784,37 @@ static void sig_handler_leg_usr2(int signal) {
 
 static void sig_handler_jud_usr1(int signal) {
 	// Recibimos del ejecutivo
+	if (&tribune != NULL) {
+		char line[2];
+		read(ex_jud[0], line, 2);
+		if (line[1] == 'C') {
+			tribune.mag_count++;
+			tribune.magister[tribune.mag_count - 1] = rand();
+			float acumm = 0;
+			for (int i = 0; i<tribune.mag_count; i++){
+				acumm =+tribune.magister[i];
+			}
+			tribune.success_rate = acumm/tribune.mag_count;
+
+
+		}
+		else if (line[1] == 'E'){
+			if (tribune.mag_count>0) {
+				tribune.mag_count--;
+				float acumm = 0;
+				for (int i = 0; i<tribune.mag_count; i++){
+					acumm =+tribune.magister[i];
+				}
+				tribune.success_rate = acumm/tribune.mag_count;
+
+			}
+			else if (tribune.mag_count==0){
+				return;
+			}
+
+
+		}
+	}
 }
 
 static void sig_handler_jud_usr2(int signal) {
