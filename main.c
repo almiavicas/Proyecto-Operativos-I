@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include <semaphore.h>
+
 #include <fcntl.h>
 #include "structs.c"
 
@@ -15,6 +15,10 @@
 #define EXECUTIVE_PRINT_SEM "exec_print_sem"
 #define LEGISLATIVE_PRINT_SEM "leg_print_sem"
 #define JUDICIAL_PRINT_SEM "jud_print_sem"
+// Semaphore to manage reccessess
+#define EXECUTIVE_REC "exec_reccess"
+#define LEGISLATIVE_REC "leg_reccess"
+#define JUDICIAL_REC "jud_reccess"
 
 
 const char file_exec[] = "Ejecutivo.acc";
@@ -83,6 +87,10 @@ int main(int argc, char const *argv[]) {
 	sem_t *jud_print_sem = sem_open(JUDICIAL_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *req_mutex = sem_open(REQUEST_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	sem_t *meta_mutex = sem_open(METADATA_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+
+	sem_t *ex_reccess = sem_open(EXECUTIVE_REC, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	sem_t *leg_reccess = sem_open(LEGISLATIVE_REC, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	sem_t *jud_reccess = sem_open(JUDICIAL_REC, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	
 	// sem_init() is used for threads
 	sem_close(ministry_mutex);
@@ -156,18 +164,29 @@ int main(int argc, char const *argv[]) {
 	return 0;
 	int num_actions = 0;
 	int max_actions = atoi(argv[2]);
+	int * sval;
+
 	while (num_actions < max_actions) {
 		if (sem_trywait(exec_print_sem) == 0) {
 			// Read from ex_press pipe
 			num_actions++;
+			end_reccess(ex_reccess, exec_id);
+			end_reccess(leg_reccess, leg_id);
+			end_reccess(jud_reccess, jud_id);
 		}
 		if (sem_trywait(leg_print_sem) == 0) {
 			// Read from leg_press pipe
 			num_actions++;
+			end_reccess(ex_reccess, exec_id);
+			end_reccess(leg_reccess, leg_id);
+			end_reccess(jud_reccess, jud_id);
 		}
 		if (sem_trywait(jud_print_sem) == 0) {
 			// Read from jud_press pipe
 			num_actions++;
+			end_reccess(ex_reccess, exec_id);
+			end_reccess(leg_reccess, leg_id);
+			end_reccess(jud_reccess, jud_id);
 		}
 		usleep(50);
 	}
@@ -179,6 +198,9 @@ int main(int argc, char const *argv[]) {
 	sem_close(exec_print_sem);
 	sem_close(leg_print_sem);
 	sem_close(jud_print_sem);
+	sem_close(ex_reccess);
+	sem_close(leg_reccess);
+	sem_close(jud_reccess);
 
 	sem_unlink(MINISTRY_MUTEX);
 	sem_unlink(EXECUTIVE_PRINT_SEM);
@@ -186,6 +208,9 @@ int main(int argc, char const *argv[]) {
 	sem_unlink(JUDICIAL_PRINT_SEM);
 	sem_unlink(REQUEST_SEM);
 	sem_unlink(METADATA_MUTEX);
+	sem_unlink(EXECUTIVE_REC);
+	sem_unlink(LEGISLATIVE_REC);
+	sem_unlink(JUDICIAL_REC);
 	FILE * sem_file = fopen("Semaforos.txt", "r");
 	if (sem_file == NULL) return 0;
 	else {
@@ -202,6 +227,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	// Initial config
 	president = *create_executive(id);
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT);
+	sem_t *ex_reccess = sem_open(EXECUTIVE_REC, O_CREAT);
 	close(ex_jud[0]);
 	close(ex_leg[0]);
 	close(ex_press[0]);
@@ -224,6 +250,8 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 
 	// Task management
 	while (1) {
+		int reccess_time = 1;
+		int reccess_count = 0;
 		while (feof(EXECUTIVE_F)) {
 			action act;
 			long int action_start = ftell(EXECUTIVE_F);
@@ -325,7 +353,10 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					if (success = accepted(president.success_rate)) {
 						init_ministry(value);
 						fork();
-						if (getpid() != exec_id) return ministry_task(getpid());
+						if (getpid() != exec_id) {
+							sem_close(ministry_mutex);
+							return ministry_task(getpid());
+						}
 					}
 					
 					sem_post(ministry_mutex);
@@ -489,7 +520,21 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						line = fgets(line, LINE_LEN, EXECUTIVE_F));
 				}
 				// In this case, we only nead to read the next empty line;
-				
+				char * l;
+				for(l = fgets(l, LINE_LEN, EXECUTIVE_F); feof(EXECUTIVE_F) && strlen(l) < 2; l = fgets(l, LINE_LEN, EXECUTIVE_F));
+				if (feof(EXECUTIVE_F)) fseek(EXECUTIVE_F, - strlen(l), SEEK_CUR);
+				else {
+					// Entra en receso
+					printf("%s\n", "President going into reccess");
+					if (++reccess_count >= 3) {
+						reccess_time *= 3;
+						reccess_count = 0;
+					}
+					for(int i = 0; i < reccess_time; i++) {
+						sem_wait(ex_reccess);
+						kill(exec_id, SIGSTOP);
+					}
+				}
 			}
 			if (success == 2) continue;
 			if (success == 1) success = accepted(president.success_rate);
