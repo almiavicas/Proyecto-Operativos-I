@@ -379,7 +379,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 							fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp50) + 2), SEEK_CUR);
 							fprintf(MINISTRIES_F, "%s", act.name);
 							fseek(MINISTRIES_F, strlen(bksp100) - strlen(act.name) + 1, SEEK_CUR);
-							fprintf(MINISTRIES_F, "%d\n", ftell(EXECUTIVE_F));
+							fprintf(MINISTRIES_F, "%lo\n", ftell(EXECUTIVE_F));
 							break;
 						}
 					}
