@@ -147,3 +147,11 @@ int find_string(char * string, FILE * f) {
 	fseek(f, current_cursor, SEEK_SET);
 	return 0;
 }
+
+void end_reccess(sem_t * t1, pid_t id) {
+	int * sval;
+	if (sem_getvalue(t1, sval) <= 0) {
+		sem_post(t1);
+		kill(id, SIGCONT);
+	}
+}
