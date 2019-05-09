@@ -379,7 +379,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 							fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp50) + 2), SEEK_CUR);
 							fprintf(MINISTRIES_F, "%s", act.name);
 							fseek(MINISTRIES_F, strlen(bksp100) - strlen(act.name) + 1, SEEK_CUR);
-							fprintf(MINISTRIES_F, "%d\n", action_start);
+							fprintf(MINISTRIES_F, "%d\n", ftell(EXECUTIVE_F));
 							break;
 						}
 					}
@@ -487,9 +487,30 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					}
 				}
 				else if (!strcmp(keyword, destituir) && success) {
-					// Destituye un magistrado
-					write_pipe("PE", ex_jud);
-					kill(jud_id, SIGUSR1);
+					// Destituye un ministro o magistrado
+					if (value[1] = 'a') {
+						// magistrado
+						write_pipe("PE", ex_jud);
+						kill(jud_id, SIGUSR1);
+					}
+					else {
+						// ministro
+						// Elimina al ministro, y crea una accion en el plan del presidente
+						while (*(value++) != ' ');
+						while (*(value++) != ' ');
+						sem_wait(ministry_mutex);
+						MINISTRIES_F = fopen("Ministros.txt", "r+");
+						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+							while (*(l++) != ' ');
+							while (*(l++) != ' ');
+							int same = 1;
+							for (int i = 0; i < strlen(value) && same; i++) {
+								same = value[i] == l[i];
+							}
+						}
+
+						sem_post(ministry_mutex);
+					}
 				}
 				else if (!strcmp(keyword, disolver) && success) {
 					
