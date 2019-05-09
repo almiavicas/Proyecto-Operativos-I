@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <semaphore.h>
 #include "ordered_list.c"
 #define NAME_LEN 40
 #define LINE_LEN 250
@@ -85,3 +86,5 @@ void write_metadata(const char C);
 void process_metadata(void);
 
 int find_string(char * string, FILE * f);
+
+void end_reccess(sem_t * t1);
