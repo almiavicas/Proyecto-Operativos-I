@@ -228,6 +228,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	president = *create_executive(id);
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT);
 	sem_t *ex_reccess = sem_open(EXECUTIVE_REC, O_CREAT);
+	sem_t *print_sem = sem_open(EXECUTIVE_PRINT_SEM, O_CREAT);
 	close(ex_jud[0]);
 	close(ex_leg[0]);
 	close(ex_press[0]);
@@ -507,13 +508,30 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 							for (int i = 0; i < strlen(value) && same; i++) {
 								same = value[i] == l[i];
 							}
+							if (same) {
+								// Deja sin ministro al ministerio
+								fseek(MINISTRIES_F, - strlen(l) + strlen(bksp100) + 1, SEEK_CUR);
+								fprintf(MINISTRIES_F, "%s", bksp50);
+								break;
+							}
 						}
-
 						sem_post(ministry_mutex);
+						long int actual_cursor = ftell(EXECUTIVE_F);
+						fseek(EXECUTIVE_F, 0, SEEK_END);
+						// Creamos la accion en el plan del presidente para agregar un ministro
+						fprintf(EXECUTIVE_F, "\n%s\n", "Agregar ministro");
+						fprintf(EXECUTIVE_F, "%s %s\n", "nombrar: Ministro de", value);
+						fprintf(EXECUTIVE_F, "%s %s\n", "exito: nombran nuevo ministro de", value);
+						fprintf(EXECUTIVE_F, "%s %s %s\n", "fracaso: El puesto de ministro de", value, "queda vacante");
+						fseek(EXECUTIVE_F, actual_cursor, SEEK_SET);
 					}
 				}
 				else if (!strcmp(keyword, disolver) && success) {
-					
+					// Disuelve el congreso
+					kill(leg_id, SIGTERM);
+					// Se comunica con el padre para que cree un nuevo congreso
+					write_pipe("CC", ex_press);
+					sem_post(print_sem);
 				}
 				else if (!strcmp(keyword, censurar) && success) {
 					
@@ -633,9 +651,6 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 				else if (!strcmp(keyword, destituir)) {
 					
 				}
-				else if (!strcmp(keyword, disolver)) {
-					
-				}
 				else if (!strcmp(keyword, censurar)) {
 					
 				}
@@ -733,9 +748,6 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 				else if (!strcmp(keyword, destituir)) {
 					
 				}
-				else if (!strcmp(keyword, disolver)) {
-					
-				}
 				else if (!strcmp(keyword, censurar)) {
 					
 				}
@@ -766,6 +778,11 @@ void init_ministry(char * name) {
 		// TO DO:
 		// Tell the parent to kill everyone
 	}
+	// El formato de ministro es el siguiente
+	// 		100 caracteres para nombre de ministerio
+	//  	50 caracteres para nombre de ministro
+	//  	100 caracteres para nombre de la accion
+	// 		50 caracteres para offset dentro del archivo de Ejecutivo.acc
 	fprintf(MINISTRIES_F, "%s|%s|%s|%s\n", bksp100, bksp50, bksp100, bksp50);
 	fseek(MINISTRIES_F, -((strlen(bksp100) * 2) + (strlen(bksp50) * 2) + 4), SEEK_CUR);
 	fprintf(MINISTRIES_F, "%s\n", name);
@@ -832,7 +849,7 @@ static void sig_handler_leg_usr1(int signal) {
 			send_president_request(exec_id, exec_id, success);
 		}
 		else {
-			fprintf(stderr, "%s\n", "Error in pipes communication");
+			fprintf(stderr, "%s\n", "Error in pipes comunication");
 		}
 	}
 	else {
