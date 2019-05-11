@@ -173,7 +173,7 @@ int main(int argc, char const *argv[]) {
 			read(ex_press[0], message, LINE_LEN);
 			if (message[0] == 'C' && message[1] == 'C') {
 				if (fork()==0){
-					return executive_task((exec_id = getpid()), ex_jud, ex_leg, ex_press);
+					return legislative_task((leg_id = getpid()), ex_leg, leg_jud, jud_leg, leg_press, press_leg);
 				}
 				else {
 				// Update metadata 
@@ -203,21 +203,17 @@ int main(int argc, char const *argv[]) {
 			// Read from leg_press pipe
 			char * message;
 			read(leg_press[0], message, LINE_LEN);
-			if (message[0] == 'C' && message[1] == 'C') {
+			if (message[0] == 'P' && message[1] == 'C') {
 				if (fork()==0){
-					return legislative_task((leg_id = getpid()), ex_leg, leg_jud, jud_leg, leg_press, press_leg);
+					return executive_task((exec_id = getpid()), ex_jud, ex_leg, ex_press);
 				}
 				else {
 				// Update metadata 
 					kill(master, SIGSTOP);
-					process_metadata();	
+					process_metadata();
 					kill(exec_id, SIGCONT);
-
-					// Tell congress to eliminate some actions
-					write_pipe("CA",ex_leg);
-					kill(leg_id, SIGUSR1);
-					// Wait for the congress to end
-					sleep(1);
+					kill(exec_id, SIGUSR1);
+					// Wait for the president to end
 					// Continue congress
 					kill(leg_id, SIGCONT);
 
@@ -277,6 +273,12 @@ int main(int argc, char const *argv[]) {
 static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2]){
 	// Initial config
 	president = *create_executive(id);
+	struct sigaction act;
+	act.sa_handler = sig_handler_exec_usr1;
+	sigemptyset(&(act.sa_mask));
+	sigaddset(&(act.sa_mask), SIGUSR1);
+	act.sa_flags = SA_INTERRUPT;
+	sigaction(SIGUSR1, &act, NULL);
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT);
 	sem_t *ex_reccess = sem_open(EXECUTIVE_REC, O_CREAT);
 	sem_t *print_sem = sem_open(EXECUTIVE_PRINT_SEM, O_CREAT);
@@ -872,6 +874,13 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 				}
 				else if (!strcmp(keyword, censurar) && success) {
 					
+					kill(exec_id, SIGTERM);
+					write_pipe("PC", leg_press);
+					sem_post(print_sem);
+					kill(leg_id, SIGSTOP);
+					process_metadata();
+
+
 				}
 				else if (!strcmp(keyword, renuncia) && success) {
 					
@@ -1162,6 +1171,33 @@ static void sig_handler_jud_usr2(int signal) {
 
 	kill(leg_id, SIGCONT);
 }
+
+static void sig_handler_exec_usr1(int signal){
+
+	fseek(EXECUTIVE_F, 0, SEEK_SET);
+	char * l;
+	for (l = fgets(l, LINE_LEN, EXECUTIVE_F); feof(EXECUTIVE_F); l = fgets(l, LINE_LEN, EXECUTIVE_F)) {
+		if (strlen(l) > 2) {
+			if (accepted(president.success_rate)) {
+				// borrar la accion
+				while (strlen(l) > 2) {
+					fseek(EXECUTIVE_F, -strlen(l), SEEK_CUR);
+					for (int i = 0; i < strlen(l); i++) fprintf(EXECUTIVE_F, " ");
+					l = fgets(l, LINE_LEN, EXECUTIVE_F);	
+				}
+				
+			}
+			else {
+				// Saltar hasta la nueva accion
+				while (strlen(l) <= 1) l = fgets(l, LINE_LEN, EXECUTIVE_F);
+			}
+		}
+	}
+	fseek(EXECUTIVE_F, 0, SEEK_SET);
+
+}
+
+
 
 void send_president_request(pid_t from, pid_t to, int result) {
 	sem_t * req_mutex = sem_open(REQUEST_SEM, O_CREAT);

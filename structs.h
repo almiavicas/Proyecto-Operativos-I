@@ -71,6 +71,8 @@ static void sig_handler_jud_usr1(int signal);
 
 static void sig_handler_jud_usr2(int signal);
 
+static void sig_handler_exec_usr1(int signal);
+
 char * read_keyword(FILE * f);
 
 int accepted(float success_rate);
