@@ -180,6 +180,7 @@ int main(int argc, char const *argv[]) {
 			// Read from ex_press pipe
 			char * message;
 			read(ex_press[0], message, LINE_LEN);
+			
 			if (message[0] == 'C' && message[1] == 'C') {
 				if (fork()==0){
 					return legislative_task((leg_id = getpid()), ex_leg, leg_jud, jud_leg, leg_press, press_leg);
@@ -201,6 +202,7 @@ int main(int argc, char const *argv[]) {
 				}	
 			}
 			else {
+				kill(exec_id, SIGCONT);
 				printf("%d: %s\n", num_actions++, message);
 				end_reccess(ex_reccess, exec_id);
 				end_reccess(leg_reccess, leg_id);
@@ -212,6 +214,7 @@ int main(int argc, char const *argv[]) {
 			// Read from leg_press pipe
 			char * message;
 			read(leg_press[0], message, LINE_LEN);
+			
 			if (message[0] == 'P' && message[1] == 'C') {
 				if (fork()==0){
 					return executive_task((exec_id = getpid()), ex_jud, ex_leg, ex_press);
@@ -231,6 +234,7 @@ int main(int argc, char const *argv[]) {
 				}	
 			}
 			else {
+				kill(leg_id, SIGCONT);
 				printf("%d: %s\n", num_actions++, message);
 				end_reccess(ex_reccess, exec_id);
 				end_reccess(leg_reccess, leg_id);
@@ -241,6 +245,7 @@ int main(int argc, char const *argv[]) {
 			// Read from jud_press pipe
 			char * message;
 			read(jud_press[0], message, LINE_LEN);
+			kill(jud_id, SIGCONT);
 			printf("%d: %s\n", num_actions++, message);
 			end_reccess(ex_reccess, exec_id);
 			end_reccess(leg_reccess, leg_id);
@@ -378,7 +383,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 							// We are searching the request that was sent by
 							// the president.
 							if (from == exec_id) {
-								if (response = '0') success = 0;
+								if (response == '0') success = 0;
 								break;
 							} 
 						}
@@ -387,8 +392,8 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						sem_close(req_mutex);
 					}
 					else {
-						fprintf(stderr, "%s%s\n", "Error parsing power name: ", value);
-						return -1;
+						// The president is requesting permission from a minister.
+						// TO DO
 					}
 				}
 				else if (!strcmp(keyword, crear) && success) {
@@ -422,7 +427,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 							fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp50) + 2), SEEK_CUR);
 							fprintf(MINISTRIES_F, "%s", act.name);
 							fseek(MINISTRIES_F, strlen(bksp100) - strlen(act.name) + 1, SEEK_CUR);
-							fprintf(MINISTRIES_F, "%lo\n", ftell(EXECUTIVE_F));
+							fprintf(MINISTRIES_F, "%d", ftell(EXECUTIVE_F));
 							break;
 						}
 					}
@@ -605,9 +610,13 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 			if (success == 2) continue;
 			if (success == 1 && accepted(president.success_rate)) {
 				write(ex_press[1], act.success, strlen(act.success) + 1);
+				long int action_end = ftell(EXECUTIVE_F);
+				fseek(EXECUTIVE_F, action_start, SEEK_SET);
+				while (ftell(EXECUTIVE_F) < action_end) fprintf(EXECUTIVE_F, " ");
 			}
 			else write(ex_press[1], act.failure, strlen(act.failure) + 1);
 			sem_post(print_sem);
+			kill(getpid(), SIGSTOP);
 		}
 
 		// Before going to reccess we need to check the requests of the president
@@ -709,6 +718,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 		fseek(LEGISLATIVE_F, 0, SEEK_SET);
 		while (feof(LEGISLATIVE_F)) {
 			action act;
+			long int action_start = ftell(LEGISLATIVE_F);
 			act.name = fgets(act.name, LINE_LEN, LEGISLATIVE_F);
 			if (!accepted(0.2f)) {
 				while (strlen(act.name) > 2 && feof(LEGISLATIVE_F)) fgets(act.name, LINE_LEN, LEGISLATIVE_F);
@@ -864,8 +874,6 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 					sem_post(print_sem);
 					kill(leg_id, SIGSTOP);
 					process_metadata();
-
-
 				}
 				else if (!strcmp(keyword, exito)) {
 					act.success = value;
@@ -876,10 +884,19 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 				}
 				else {
 					fprintf(stderr, "%s\n", "Error reading file Legislativo.acc");
-					return -1;
+					kill(master, SIGUSR1);
 				}
 			}
 
+			if (success && accepted(congress.success_rate)) {
+				write(leg_press[1], act.success, strlen(act.success) + 1);
+				long int action_end = ftell(LEGISLATIVE_F);
+				fseek(LEGISLATIVE_F, action_start, SEEK_SET);
+				while (ftell(LEGISLATIVE_F) < action_end) fprintf(LEGISLATIVE_F, " ");
+			}
+			else write(leg_press[1], act.failure, strlen(act.failure) + 1);
+			sem_post(print_sem);
+			kill(getpid(), SIGSTOP);
 		}
 		printf("%s\n", "Congress going into reccess");
 		if (++reccess_count >= 3) {
@@ -906,6 +923,8 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	act.sa_handler = sig_handler_jud_usr2;
 	sigaction(SIGUSR2, &act, NULL);
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT);
+	sem_t *jud_reccess = sem_open(JUDICIAL_REC, O_CREAT);
+	sem_t *print_sem = sem_open(JUDICIAL_PRINT_SEM, O_CREAT);
 	close(ex_jud[1]);
 	close(leg_jud[1]);
 	close(jud_leg[0]);
@@ -927,6 +946,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 		fseek(JUDICIAL_F, 0, SEEK_SET);
 		while (feof(JUDICIAL_F)) {
 			action act;
+			long int action_start = ftell(JUDICIAL_F);
 			act.name = fgets(act.name, LINE_LEN, JUDICIAL_F);
 			if (!accepted(0.2f)) {
 				while (strlen(act.name) > 2 && feof(JUDICIAL_F)) fgets(act.name, LINE_LEN, JUDICIAL_F);
@@ -1103,6 +1123,24 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					return -1;
 				}
 			}
+			if (success && accepted(tribune.success_rate)) {
+				write(jud_press[1], act.success, strlen(act.success) + 1);
+				long int action_end = ftell(JUDICIAL_F);
+				fseek(JUDICIAL_F, action_start, SEEK_SET);
+				while (ftell(JUDICIAL_F) < action_end) fprintf(JUDICIAL_F, " ");
+			}
+			else write(jud_press[1], act.failure, strlen(act.failure) + 1);
+			sem_post(print_sem);
+			kill(getpid(), SIGSTOP);
+		}
+		printf("%s\n", "Tribunal going into reccess");
+		if (++reccess_count >= 3) {
+			reccess_time *= 3;
+			reccess_count = 0;
+		}
+		for(int i = 0; i < reccess_time; i++) {
+			sem_wait(jud_reccess);
+			kill(jud_id, SIGSTOP);
 		}
 	}
 	return 0;
