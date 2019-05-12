@@ -63,6 +63,8 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 
 static int ministry_task(pid_t id);
 
+static void sig_handler_master(int signal);
+
 static void sig_handler_leg_usr1(int signal);
 
 static void sig_handler_leg_usr2(int signal);

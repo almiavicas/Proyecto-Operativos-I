@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-
 #include <fcntl.h>
 #include "structs.c"
 
@@ -67,6 +66,13 @@ int jud_press[2];
 int press_leg[2];
 
 int main(int argc, char const *argv[]) {
+	// Initial config
+	struct sigaction act;
+	act.sa_handler = sig_handler_master;
+	sigemptyset(&(act.sa_mask));
+	sigaddset(&(act.sa_mask), SIGUSR1);
+	act.sa_flags = SA_INTERRUPT;
+	sigaction(SIGUSR1, &act, NULL);
 	master = getpid();
 	printf("%s %d\n", "Parent id:", master);
 	pipe(ex_jud);
@@ -77,7 +83,6 @@ int main(int argc, char const *argv[]) {
 	pipe(leg_press);
 	pipe(jud_press);
 	pipe(press_leg); 
-	list_t president_requests = *new_ordered_list();
 	// Mutex shared between processes
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// These mutexes are for the press process. When they are unlocked, The
@@ -85,9 +90,11 @@ int main(int argc, char const *argv[]) {
 	sem_t *exec_print_sem = sem_open(EXECUTIVE_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *leg_print_sem = sem_open(LEGISLATIVE_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *jud_print_sem = sem_open(JUDICIAL_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+	// Mutex to open the requests file of the president
 	sem_t *req_mutex = sem_open(REQUEST_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+	// Mutex to read and write metadata
 	sem_t *meta_mutex = sem_open(METADATA_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
-
+	// Mutex to go into recess
 	sem_t *ex_reccess = sem_open(EXECUTIVE_REC, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	sem_t *leg_reccess = sem_open(LEGISLATIVE_REC, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	sem_t *jud_reccess = sem_open(JUDICIAL_REC, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
@@ -113,13 +120,13 @@ int main(int argc, char const *argv[]) {
 	fclose(EXECUTIVE_F);
 	LEGISLATIVE_F = fopen(file_leg, "r+");
 	if (LEGISLATIVE_F == NULL) {
-		fprintf(stderr, "%s\n", "File not found: Legislativo.acc");
+		fprintf(stderr, "%s %s\n", "File not found:", file_leg);
 		return 1;
 	}
 	fclose(LEGISLATIVE_F);
 	JUDICIAL_F = fopen(file_jud, "r+");
 	if (JUDICIAL_F == NULL) {
-		fprintf(stderr, "%s\n", "File not found: Judicial.acc");
+		fprintf(stderr, "%s %s\n", "File not found:", file_jud);
 		return 1;
 	}
 	fclose(JUDICIAL_F);
@@ -141,6 +148,7 @@ int main(int argc, char const *argv[]) {
 		return 1;
 	}
 	fclose(METADATA_F);
+	// Create powers
 	for (int i = 0; i < 3; i++) {
 		if (fork() == 0) {
 			if (i == 0) {
@@ -162,7 +170,8 @@ int main(int argc, char const *argv[]) {
 	kill(exec_id, SIGCONT);
 	kill(leg_id, SIGCONT);
 	kill(jud_id, SIGCONT);
-	return 0;
+
+	// Here starts the press process.
 	int num_actions = 0;
 	int max_actions = atoi(argv[2]);
 
@@ -192,7 +201,7 @@ int main(int argc, char const *argv[]) {
 				}	
 			}
 			else {
-				num_actions++;
+				printf("%d: %s\n", num_actions++, message);
 				end_reccess(ex_reccess, exec_id);
 				end_reccess(leg_reccess, leg_id);
 				end_reccess(jud_reccess, jud_id);
@@ -222,7 +231,7 @@ int main(int argc, char const *argv[]) {
 				}	
 			}
 			else {
-				num_actions++;
+				printf("%d: %s\n", num_actions++, message);
 				end_reccess(ex_reccess, exec_id);
 				end_reccess(leg_reccess, leg_id);
 				end_reccess(jud_reccess, jud_id);
@@ -230,17 +239,15 @@ int main(int argc, char const *argv[]) {
 		}
 		if (sem_trywait(jud_print_sem) == 0) {
 			// Read from jud_press pipe
-			num_actions++;
+			char * message;
+			read(jud_press[0], message, LINE_LEN);
+			printf("%d: %s\n", num_actions++, message);
 			end_reccess(ex_reccess, exec_id);
 			end_reccess(leg_reccess, leg_id);
 			end_reccess(jud_reccess, jud_id);
 		}
 		usleep(50);
 	}
-
-	kill(exec_id, SIGTERM);
-	kill(leg_id, SIGTERM);
-	kill(jud_id, SIGTERM);
 
 	sem_close(exec_print_sem);
 	sem_close(leg_print_sem);
@@ -249,24 +256,8 @@ int main(int argc, char const *argv[]) {
 	sem_close(leg_reccess);
 	sem_close(jud_reccess);
 
-	sem_unlink(MINISTRY_MUTEX);
-	sem_unlink(EXECUTIVE_PRINT_SEM);
-	sem_unlink(LEGISLATIVE_PRINT_SEM);
-	sem_unlink(JUDICIAL_PRINT_SEM);
-	sem_unlink(REQUEST_SEM);
-	sem_unlink(METADATA_MUTEX);
-	sem_unlink(EXECUTIVE_REC);
-	sem_unlink(LEGISLATIVE_REC);
-	sem_unlink(JUDICIAL_REC);
-	FILE * sem_file = fopen("Semaforos.txt", "r");
-	if (sem_file == NULL) return 0;
-	else {
-		for (char * line = fgets(line, LINE_LEN, sem_file); feof(sem_file); line = fgets(line, LINE_LEN, sem_file)) {
-			line[strlen(line)-1] = '\0';
-			sem_unlink(line);
-		}
-	}
-	
+	// method to terminate the program
+	sig_handler_master(SIGUSR1);
 	return 0;
 }
 
@@ -286,12 +277,6 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	close(ex_leg[0]);
 	close(ex_press[0]);
 	EXECUTIVE_F = fopen(file_exec, "r+");
-	sigset_t mask, old_mask;
-	sigfillset(&mask);
-	// This is the signal we don't want to block when waiting responses, since
-	// it will be the one that the congress and tribune will send
-	sigdelset(&mask, SIGUSR1);
-	sigdelset(&mask, SIGINT);
 	write_metadata('P');
 	printf("%s %d %s %d\n", "sending signal from", getpid(), "to", master);
 	fflush(stdout);
@@ -329,7 +314,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 			// The success variable can have 3 states in the executive power:
 			// 	0 -> means unsuccessful
 			// 	1 -> means successful
-			// 	2 -> means the action was sent to a minister, so no printing.
+			// 	2 -> means the action was sent to a minister, so no printing is needed.
 			int success = 1;
 			while (!end) {
 				char * keyword = read_keyword(EXECUTIVE_F);
@@ -1190,6 +1175,31 @@ static int ministry_task(pid_t id){
 	return 1;
 }
 
+static void sig_handler_master(int signal) {
+	// This handler is to tell the master to kill everyone
+	kill(exec_id, SIGTERM);
+	kill(leg_id, SIGTERM);
+	kill(jud_id, SIGTERM);
+
+	sem_unlink(MINISTRY_MUTEX);
+	sem_unlink(EXECUTIVE_PRINT_SEM);
+	sem_unlink(LEGISLATIVE_PRINT_SEM);
+	sem_unlink(JUDICIAL_PRINT_SEM);
+	sem_unlink(REQUEST_SEM);
+	sem_unlink(METADATA_MUTEX);
+	sem_unlink(EXECUTIVE_REC);
+	sem_unlink(LEGISLATIVE_REC);
+	sem_unlink(JUDICIAL_REC);
+	FILE * sem_file = fopen("Semaforos.txt", "r");
+	if (sem_file != NULL) {
+		for (char * line = fgets(line, LINE_LEN, sem_file); feof(sem_file); line = fgets(line, LINE_LEN, sem_file)) {
+			line[strlen(line)-1] = '\0';
+			sem_unlink(line);
+		}
+	}
+	kill(master, SIGTERM);
+}
+
 static void sig_handler_leg_usr1(int signal) {
 	// Recibimos del ejecutivo
 	if (&congress != NULL) {
@@ -1251,7 +1261,6 @@ static void sig_handler_leg_usr2(int signal) {
 	}
 	kill(jud_id, SIGCONT);
 }
-
 
 static void sig_handler_jud_usr1(int signal) {
 	// Recibimos del ejecutivo
@@ -1334,10 +1343,7 @@ static void sig_handler_exec_usr1(int signal){
 		}
 	}
 	fseek(EXECUTIVE_F, 0, SEEK_SET);
-
 }
-
-
 
 void send_president_request(pid_t from, pid_t to, int result) {
 	sem_t * req_mutex = sem_open(REQUEST_SEM, O_CREAT);
@@ -1402,5 +1408,4 @@ void process_metadata() {
 			exit(1);
 		}
 	}
-
 }
