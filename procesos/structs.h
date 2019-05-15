@@ -92,3 +92,5 @@ void process_metadata(void);
 int find_string(char * string, FILE * f);
 
 void end_reccess(sem_t * t1, pid_t id);
+
+int is_ministry_active(char * name);

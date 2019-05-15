@@ -14,6 +14,9 @@
 #define EXECUTIVE_PRINT_SEM "exec_print_sem"
 #define LEGISLATIVE_PRINT_SEM "leg_print_sem"
 #define JUDICIAL_PRINT_SEM "jud_print_sem"
+
+#define MINISTRY_SEM "min_sem"
+#define MINISTRY_PRINT_SEM "min_print_sem"
 // Semaphore to manage reccessess
 #define EXECUTIVE_REC "exec_reccess"
 #define LEGISLATIVE_REC "leg_reccess"
@@ -64,6 +67,7 @@ int jud_leg[2];
 int ex_press[2];
 int leg_press[2];
 int jud_press[2];
+int min_press[2];
 int press_leg[2];
 
 int main(int argc, char const *argv[]) {
@@ -83,6 +87,7 @@ int main(int argc, char const *argv[]) {
 	pipe(ex_press);
 	pipe(leg_press);
 	pipe(jud_press);
+	pipe(min_press);
 	pipe(press_leg); 
 	// Mutex shared between processes
 	sem_t *ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
@@ -91,6 +96,9 @@ int main(int argc, char const *argv[]) {
 	sem_t *exec_print_sem = sem_open(EXECUTIVE_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *leg_print_sem = sem_open(LEGISLATIVE_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
 	sem_t *jud_print_sem = sem_open(JUDICIAL_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+	sem_t *min_print_sem = sem_open(MINISTRY_PRINT_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 0);
+
+	sem_t *min_sem = sem_open(MINISTRY_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// Mutex to open the requests file of the president
 	sem_t *req_mutex = sem_open(REQUEST_SEM, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 	// Mutex to read and write metadata
@@ -105,13 +113,6 @@ int main(int argc, char const *argv[]) {
 	sem_close(req_mutex);
 	sem_close(meta_mutex);
 
-	
-	// Pipes config for press
-	close(ex_press[1]);
-	close(leg_press[1]);
-	close(jud_press[1]);
-	close(press_leg[0]);
-	close(ex_jud[0]);
 
 	EXECUTIVE_F = fopen(file_exec, "r+");
 	if (EXECUTIVE_F == NULL) {
@@ -172,6 +173,14 @@ int main(int argc, char const *argv[]) {
 	kill(leg_id, SIGCONT);
 	kill(jud_id, SIGCONT);
 
+	// Pipes config for press
+	close(ex_press[1]);
+	close(leg_press[1]);
+	close(jud_press[1]);
+	close(press_leg[0]);
+	close(ex_jud[0]);
+	close(min_press[1]);
+
 	// Here starts the press process.
 	int num_actions = 0;
 	int max_actions = atoi(argv[2]);
@@ -179,7 +188,7 @@ int main(int argc, char const *argv[]) {
 	while (num_actions < max_actions) {
 		if (sem_trywait(exec_print_sem) == 0) {
 			// Read from ex_press pipe
-			char * message;
+			char message[LINE_LEN];
 			read(ex_press[0], message, LINE_LEN);
 			
 			if (message[0] == 'C' && message[1] == 'C') {
@@ -204,7 +213,7 @@ int main(int argc, char const *argv[]) {
 			}
 			else {
 				kill(exec_id, SIGCONT);
-				printf("%d: %s\n", num_actions++, message);
+				printf("%d: %s\n", ++num_actions, message);
 				end_reccess(ex_reccess, exec_id);
 				end_reccess(leg_reccess, leg_id);
 				end_reccess(jud_reccess, jud_id);
@@ -213,7 +222,7 @@ int main(int argc, char const *argv[]) {
 		}
 		if (sem_trywait(leg_print_sem) == 0) {
 			// Read from leg_press pipe
-			char * message;
+			char message[LINE_LEN];
 			read(leg_press[0], message, LINE_LEN);
 			
 			if (message[0] == 'P' && message[1] == 'C') {
@@ -236,7 +245,7 @@ int main(int argc, char const *argv[]) {
 			}
 			else {
 				kill(leg_id, SIGCONT);
-				printf("%d: %s\n", num_actions++, message);
+				printf("%d: %s\n", ++num_actions, message);
 				end_reccess(ex_reccess, exec_id);
 				end_reccess(leg_reccess, leg_id);
 				end_reccess(jud_reccess, jud_id);
@@ -244,13 +253,23 @@ int main(int argc, char const *argv[]) {
 		}
 		if (sem_trywait(jud_print_sem) == 0) {
 			// Read from jud_press pipe
-			char * message;
+			char message[LINE_LEN];
 			read(jud_press[0], message, LINE_LEN);
 			kill(jud_id, SIGCONT);
-			printf("%d: %s\n", num_actions++, message);
+			printf("%d: %s\n", ++num_actions, message);
 			end_reccess(ex_reccess, exec_id);
 			end_reccess(leg_reccess, leg_id);
 			end_reccess(jud_reccess, jud_id);
+		}
+		if (sem_trywait(min_print_sem) == 0) {
+			// Read from ministers pipe
+			char message[LINE_LEN];
+			read(min_press[0], message, LINE_LEN);
+			sem_post(min_sem);
+			printf("%d: %s\n", ++num_actions, message);
+			end_reccess(ex_reccess, exec_id);
+			end_reccess(leg_reccess, leg_id);
+			end_reccess(jud_reccess, jud_id);	
 		}
 		usleep(50);
 	}
@@ -669,6 +688,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 		char * line;
 		while (feof(PRESIDENT_REQUESTS_F)) {
 			fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
+			if (line[0] = ' ') continue;
 			parse_request(line, from_id, to_id, &response);
 			if (atoi(to_id) == exec_id) {
 				int ans = accepted(president.success_rate);
@@ -683,24 +703,73 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					else write_pipe("TN", ex_jud);
 					kill(jud_id, SIGCONT);
 				}
-				else {
+				else if (atoi(&response) == -1) {
 					// Viene de un ministerio
-					// TODO: Definir comportamiento con ministerios
+					send_president_request(atoi(from_id), exec_id, ans);
+					kill(atoi(from_id), SIGCONT);
 				}
 			}
 			else if (atoi(to_id) == leg_id) {
-				// TO DO: reenviar requests de ministros a otros poderes
-				// write_pipe("PP");
-				// kill(leg_id, SIGUSR1);
+				pid_t minister_id = atoi(from_id);
+				long int cursor_position = ftell(PRESIDENT_REQUESTS_F);
 				// // Libero para que me puedan responder
-				// sem_post(req_mutex);
-				// kill(exec_id, SIGSTOP);
-				// sem_wait(req_mutex);
-				// long int actual_cursor = ftell(PRESIDENT_REQUESTS_F);
-
+				sem_post(req_mutex);
+				write_pipe("PP", ex_leg);
+				// We interrupt the congress to tell them to answer us
+				kill(leg_id, SIGUSR1);
+				// We wait until the congress responds. We
+				// suspend this process until SIGCONT is caught by it
+				kill(exec_id, SIGSTOP);
+				// At this point, the default sigset_t configuration of
+				// the process will restore itself.
+				// Now we check what the congress answered
+				sem_wait(req_mutex);
+				fclose(PRESIDENT_REQUESTS_F);
+				PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
+				while (feof(PRESIDENT_REQUESTS_F)) {
+					fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
+					parse_request(line, from_id, to_id, &response);
+					int from = atoi(from_id);
+					// We are searching the request that was sent by
+					// the president.
+					if (from == exec_id) {
+						if (response == '0') send_president_request(minister_id, exec_id, 0);
+						else send_president_request(minister_id, exec_id, 1);
+						break;
+					} 
+				}
+				fseek(PRESIDENT_REQUESTS_F, cursor_position, SEEK_SET);
 			}
 			else if (atoi(to_id) == jud_id) {
-
+				pid_t minister_id = atoi(from_id);
+				long int cursor_position = ftell(PRESIDENT_REQUESTS_F);
+				// // Libero para que me puedan responder
+				sem_post(req_mutex);
+				write_pipe("PP", ex_jud);
+				// We interrupt the congress to tell them to answer us
+				kill(jud_id, SIGUSR1);
+				// We wait until the congress responds. We
+				// suspend this process until SIGCONT is caught by it
+				kill(exec_id, SIGSTOP);
+				// At this point, the default sigset_t configuration of
+				// the process will restore itself.
+				// Now we check what the congress answered
+				sem_wait(req_mutex);
+				fclose(PRESIDENT_REQUESTS_F);
+				PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
+				while (feof(PRESIDENT_REQUESTS_F)) {
+					fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
+					parse_request(line, from_id, to_id, &response);
+					int from = atoi(from_id);
+					// We are searching the request that was sent by
+					// the president.
+					if (from == exec_id) {
+						if (response == '0') send_president_request(minister_id, exec_id, 0);
+						else send_president_request(minister_id, exec_id, 1);
+						break;
+					} 
+				}
+				fseek(PRESIDENT_REQUESTS_F, cursor_position, SEEK_SET);
 			}
 		}
 		fclose(PRESIDENT_REQUESTS_F);
@@ -1208,7 +1277,11 @@ static int ministry_task(pid_t id){
 	// Initial configuration
 	ministry mi = *create_ministry(id);
 	MINISTRIES_F = fopen("Ministros.txt", "r");
+	sem_t * ministry_mutex = sem_open(MINISTRY_MUTEX, O_CREAT);
+	sem_t * print_sem = sem_open(MINISTRY_PRINT_SEM, O_CREAT);
+	sem_t * min_sem = sem_open(MINISTRY_SEM, O_CREAT);
 	char * line;
+	process_metadata();
 	while (feof(MINISTRIES_F)) line = fgets(line, LINE_LEN, MINISTRIES_F);
 	char * name = line;
 	while (line[0] != ' ') line++;
@@ -1218,7 +1291,7 @@ static int ministry_task(pid_t id){
 
 	// Task management
 	while(1) {
-		MINISTRIES_F = fopen("Ministros.txt", "r");
+		MINISTRIES_F = fopen("Ministros.txt", "r+");
 		while (feof(MINISTRIES_F)) {
 			char * line = fgets(line, LINE_LEN, MINISTRIES_F);
 			int same = 1;
@@ -1226,6 +1299,7 @@ static int ministry_task(pid_t id){
 				if (mi.name[i] != line[i]) same = 0;
 			}
 			if (same) {
+				fseek(MINISTRIES_F, -((strlen(bksp100) * 2) + (strlen(bksp50) * 2) + 4), SEEK_CUR);
 				// Check if a task is currently assigned. The char where the
 				// task name starts is the one in the 152th char. So we need to
 				// Check if that char is a blank space or not
@@ -1234,16 +1308,287 @@ static int ministry_task(pid_t id){
 					continue;
 				}
 				else {
-					char * action = line + 152;
+					char * action_name = line + 152;
 					while (line[152] != ' ') line++;
 					line[152] = '\0';
-					if (!strcmp(action, end_task)) {
-						fseek(MINISTRIES_F, -((strlen(bksp100) * 2) + (strlen(bksp50) * 2) + 4), SEEK_CUR);
-						fprintf(MINISTRIES_F, "%c\n", '#');
+					if (!strcmp(action_name, end_task)) {
+						fprintf(MINISTRIES_F, " ");
 						return 0;
 					}
+
+					else if (!strcmp(action_name, PERM)) {
+						fseek(MINISTRIES_F, 253, SEEK_CUR);
+						if (accepted(mi.success_rate)) fprintf(MINISTRIES_F, "1");
+						else fprintf(MINISTRIES_F, "0");
+					}
 					else {
-						// We have to execute the action that the president assigned for us. 
+						EXECUTIVE_F = fopen("Ejecutivo.txt", "r+");
+						long int position;
+						fseek(MINISTRIES_F, 253, SEEK_CUR);
+						line = fgets(line, LINE_LEN, MINISTRIES_F);
+						position = atoi(line);
+						fseek(EXECUTIVE_F, position, SEEK_SET);
+						int end = 0;
+						action act;
+						long int action_start = ftell(EXECUTIVE_F);
+						FILE * opened_file;
+						sem_t * mutex;
+						// the next int is to manage the mutex behaviour. -1 means
+						// uninitialized, 1 means exclusive and 0 means inclusive
+						int exclusive_sem = -1;
+						// This int tells us if we have written in the file. If that
+						// happens, we will have to add a new line at the end of file
+						int wrote = 0;
+						// The success variable can have 3 states in the executive power:
+						// 	0 -> means unsuccessful
+						// 	1 -> means successful
+						int success = 1;
+						int permission = 0;
+						while (!end) {
+							char * keyword = read_keyword(EXECUTIVE_F);
+							char * value = fgets(value, LINE_LEN, EXECUTIVE_F);
+							if (success) success = is_ministry_active(mi.name);
+							value[strlen(value)-1] = '\0';
+							while(value[0] = ' ') ++value;
+							if (keyword == NULL) {
+								fprintf(stderr, "%s %s\n", "Error reading file:", file_exec);
+								return -1;
+							}
+							if (!(strcmp(keyword, aprobacion) && strcmp(keyword, reprobacion)) && success) {
+								if (!strcmp(value, presidente)) {
+									permission = 1;
+									send_president_request(getpid(), exec_id, -1);
+									kill(getpid(), SIGSTOP);
+									PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
+									char * from;
+									char * to;
+									char response;
+									char * line;
+									while (feof(PRESIDENT_REQUESTS_F)) {
+										line = fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
+										parse_request(line, from, to, &response);
+										if (atoi(from) == getpid() && atoi(&response) != -1) {
+											if (atoi(&response) == 0) success = 0;
+											break;
+										}
+									}
+								}
+								else if(!strcmp(value, congreso)) {
+									send_president_request(getpid(), leg_id, -1);
+									kill(getpid(), SIGSTOP);
+									PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
+									char * from;
+									char * to;
+									char response;
+									char * line;
+									while (feof(PRESIDENT_REQUESTS_F)) {
+										line = fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
+										parse_request(line, from, to, &response);
+										if (atoi(from) == getpid() && atoi(&response) != -1) {
+											if (atoi(&response) == 0) success = 0;
+											break;
+										}
+									}
+								}
+								else if(!strcmp(value, tribunal)) {
+									send_president_request(getpid(), jud_id, -1);
+									kill(getpid(), SIGSTOP);
+									PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
+									char * from;
+									char * to;
+									char response;
+									char * line;
+									while (feof(PRESIDENT_REQUESTS_F)) {
+										line = fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
+										parse_request(line, from, to, &response);
+										if (atoi(from) == getpid() && atoi(&response) != -1) {
+											if (atoi(&response) == 0) success = 0;
+											break;
+										}
+									}
+								}
+								else {
+									sem_wait(ministry_mutex);
+									MINISTRIES_F = fopen("Ministros.txt", "r+");
+									while (*(value++) != ' ');
+									while (*(value++) != ' ');
+									// Guarda la linea donde esta el ministro
+									long int min_position;
+									char * l;
+									min_position = ftell(MINISTRIES_F);
+									for (l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+										l += 101;
+										int same = 1;
+										for (int i = 0; i < strlen(value) && same; i++) {
+											if (value[i] != l[i]) same = 0;
+										}
+										if (same) {
+											// Le pido permiso a este ministro
+											l += 51;
+											fprintf(MINISTRIES_F, "%s %d", PERM, getpid());
+											break;
+										}
+										min_position = ftell(MINISTRIES_F);
+									}
+									sem_post(ministry_mutex);
+									fclose(MINISTRIES_F);
+									// Espero a que me responda el ministro
+									while (1) {
+										MINISTRIES_F = fopen("Ministros.txt", "r");
+										fseek(MINISTRIES_F, min_position + 253, SEEK_SET);
+										l = fgets(l, LINE_LEN, MINISTRIES_F);
+										if (l[0] != ' ') {
+											int ans = atoi(l);
+											if (ans == 0) {
+												success = 0;
+												break;
+											}
+										}
+										fclose(MINISTRIES_F);
+									}
+								}
+							}
+							
+							else if (!strcmp(keyword, exclusivo) && success) {
+								if (opened_file != NULL) {
+									if (wrote) fprintf(opened_file, "\n");
+									fclose(opened_file);
+								}
+								if (exclusive_sem == 1) {
+									// If the last mutex was exclusive, we need to post and close
+									sem_post(mutex);
+									sem_close(mutex);
+								}
+								// If the las mutex was inclusive, we need only to close it
+								else if (exclusive_sem == 0) sem_close(mutex);
+								mutex= sem_open(value, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+								if (mutex == SEM_FAILED) mutex = sem_open(value, O_CREAT);
+								// need to wait in case other process is locking the file
+								sem_wait(mutex);
+								opened_file = fopen(value, "r+");
+								if (opened_file == NULL) {
+									fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
+									// tell the parent to kill everyone
+									kill(master, SIGUSR1);
+									return -1;
+								}
+								exclusive_sem = 1;
+							}
+							else if (!strcmp(keyword, inclusivo) && success) {
+								if (opened_file != NULL) {
+									if (wrote) fprintf(opened_file, "\n");
+									fclose(opened_file);
+								}
+								if (exclusive_sem == 1) {
+									sem_post(mutex);
+									sem_close(mutex);
+								}
+								else if (exclusive_sem == 0) sem_close(mutex);
+								mutex= sem_open(value, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+								if (mutex == SEM_FAILED) mutex = sem_open(value, O_CREAT);
+								else {
+									// Need to save the semaphore name to unlink at the end of execution
+									FILE * sem_file = fopen("Semaforos.txt", "a+");
+									fprintf(sem_file, "%s\n", value);
+								}
+								// need to wait in case other process is locking the file
+								sem_wait(mutex);
+								// We post inmediatly so anyone else can enter the file
+								sem_post(mutex);
+								opened_file = fopen(value, "r+");
+								if (opened_file == NULL) {
+									fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
+									// TO DO: tell the parent to kill everyone
+									return -1;
+								}
+								exclusive_sem = 0;
+							}
+							else if (!strcmp(keyword, leer) && success) {
+								if (!find_string(value, opened_file)) success = 0;
+							}
+							else if (!strcmp(keyword, escribir) && success) {
+								int curr_cursor = ftell(opened_file);
+								fseek(opened_file, 0, SEEK_END);
+								fprintf(opened_file, "%s\n", value);
+								wrote = 1;
+							}
+							else if (!strcmp(keyword, anular) && success) {
+								if (find_string(value, opened_file)) success = 0;
+							}
+							else if (!strcmp(keyword, renuncia)) {
+								if (success) {
+									mutex= sem_open("Legislativo.txt", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+									if (mutex == SEM_FAILED) mutex = sem_open("Legislativo.txt", O_CREAT);
+									sem_wait(mutex);
+									LEGISLATIVE_F = fopen("Legislativo.txt", "a+");
+									fprintf(LEGISLATIVE_F, "\nCensurar al presidente\n");
+									fprintf(LEGISLATIVE_F, "censurar: Presidente\n");
+									fprintf(LEGISLATIVE_F, "exito: El presidente ha sido destituido\n");
+									fprintf(LEGISLATIVE_F, "fracaso: Intento de golpe contra el presidente ha fallado\n");
+									fclose(LEGISLATIVE_F);
+									sem_post(mutex);
+									sem_close(mutex);
+									// Eliminamos al ministro
+									fseek(MINISTRIES_F, 101, SEEK_CUR);
+									fprintf(MINISTRIES_F, " ");
+									fclose(LEGISLATIVE_F);
+									fclose(MINISTRIES_F);
+									return 0;
+								}
+								else {
+									mutex= sem_open("Judicial.txt", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+									if (mutex == SEM_FAILED) mutex = sem_open("Judicial.txt", O_CREAT);
+									sem_wait(mutex);
+									JUDICIAL_F = fopen("Judicial.txt", "a+");
+									fprintf(JUDICIAL_F, "\nDestituir al ministro de %s\n", mi.name);
+									fprintf(JUDICIAL_F, "destituir: Ministro de %s\n", mi.name);
+									fprintf(JUDICIAL_F, "exito: Queda libre el cargo de ministro de %s\n", mi.name);
+									fprintf(JUDICIAL_F, "fracaso: Queda en evidencia desagrado del ministro de %s por parte del Tribunal Supremo\n", mi.name);
+									fclose(JUDICIAL_F);
+									sem_post(mutex);
+									sem_close(mutex);
+								}
+							}
+							else if (!strcmp(keyword, exito)) {
+								act.success = value;
+							}
+							else if (!strcmp(keyword, fracaso)) {
+								act.failure = value;
+								end = 1;
+							}
+							else {
+								fprintf(stderr, "%s %s\n", "Error reading action in file:", file_exec);
+								return -1;
+							}
+								
+							if (success == 1) {
+								// We did not finish of reading the action, so we need to
+								// advance until the next action shows or EOF
+								for (char * line = fgets(line, LINE_LEN, EXECUTIVE_F); 
+									line[0] != '\n' && line[0] != '\0';
+									line = fgets(line, LINE_LEN, EXECUTIVE_F));
+							}
+							else if (permission) {
+								mutex= sem_open("Ejecutivo.txt", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+								if (mutex == SEM_FAILED) mutex = sem_open("Ejecutivo.txt", O_CREAT);
+								sem_wait(mutex);
+								EXECUTIVE_F = fopen("Ejecutivo.txt", "a+");
+								fprintf(EXECUTIVE_F, "\nDestituir Ministro de %s\n", mi.name);
+								fprintf(EXECUTIVE_F, "destituir: Ministro de %s\n", mi.name);
+								fprintf(EXECUTIVE_F, "exito: Destituido ministro de %s\n", mi.name);
+								fprintf(EXECUTIVE_F, "fracaso: Ministro de %s sigue fallando en su puesto\n", mi.name);
+								fclose(EXECUTIVE_F);
+								sem_post(mutex);
+								sem_close(mutex);
+							}
+								
+							sem_wait(min_sem);
+							if (success == 1 && accepted(mi.success_rate)) {
+								write(min_press[1], act.success, strlen(act.success) + 1);
+							}
+							else write(ex_press[1], act.failure, strlen(act.failure) + 1);
+							sem_post(print_sem);
+						}
 					}
 				}
 			}
@@ -1486,4 +1831,20 @@ void process_metadata() {
 			exit(1);
 		}
 	}
+}
+
+int is_ministry_active(char * name) {
+	MINISTRIES_F = fopen("Ministros.txt", "r");
+	for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+		int same = 1;
+		for (int i = 0; i < strlen(name) && same; i++) {
+			if (name[i] != l[i]) same = 0;
+		}
+		if (same) {
+			// we check if we have a minister assigned
+			if (l[102] != ' ') return 1;
+			return 0;
+		}
+	}
+	return 0;
 }
