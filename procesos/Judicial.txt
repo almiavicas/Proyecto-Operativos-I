@@ -1,0 +1,143 @@
+Practicas monopolistas
+inclusivo: procedimientos comerciales.txt
+escribir: Ninguna empresa podra tomar acciones para cerrar, limitar o absorber otras en su mercado cuando estas acciones resultarian en el controll del 100% del mercado
+exito: falla en contra de los monopolios! El libre mercado exije libertad de elegir
+fracaso: falla a favor de los monopolios! El estado no debe interferir en los negocios
+
+Prohibiciones de tierras publicas
+exito: defiende la tierras publicas! Ningun hombre podra ser privado de su derecho a la autosuficiencia!
+fracaso: deroga uso de tierras publicas! Que comiencen los cercos!
+
+Justiprecio
+aprobacion: Ministro de Hacienda.
+exito: falla que se pagara un justiprecio por bienes incautados
+fracaso: falla que la propiedad puede ser incautada ain compensar el valor de los mismos!
+
+Coercion de Jurados
+exito: se planta contra la coercion de jurados!
+fracaso: hace la vista gorda a la coercion del jurado!
+
+Decretos y derechos
+aprobacion: Presidente
+exito: declara que los decretos no pueden infringir los derechos de los ciudadanos!
+fracaso: dice "ningun hombre, comun o no, esta por encima del decreto de la ley!"
+
+Esclavitud
+exito: falla a favor de la esclavitud en Cuba y Puerto Rico
+fracaso: falla en contra la esclavitud! Llego la emancipacion?
+
+Matrimonio interracial
+inclusivo: derechos humanos.txt
+escribir: Todos los matrimonios seran considerados validos independientemente de la raza.
+exito: devuelve a los mulatos su integridad! Falla a favor del matrimonio interracial.
+fracaso: falla en contra del matrimonio interracial
+
+Impuesto de averia
+aprobacion: Ministro de Marina
+inclusivo: procedimientos de altamar.txt
+escribir: Toda mercancia enviada desde una colonia a la madre patria debera pagar un impuesto de averia
+exito: falla a favor del impuesto de averia: a bajarse de la mula, mercaderes!
+fracaso: falla en contra del impuesto de averia
+
+Deuda de tierras
+inclusivo: procedimientos comerciales.txt
+escribir: Ningun atenedor nuevo de tierras podra ignorar las deudas adquiridas sobre esa tierra
+exito: falla en contra de terratenientes que se rehusan a pagar los impuestos atrasados de su predecesor
+fracaso: falla que ninguna familia recien mudada podra perder su tierra
+
+Responsabilidad por Dannos
+exito: falla que nadie escapara de su responsabilidad por dannos
+fracaso: declara responsabilidad por dannos negociable
+
+Reclamos de terceros
+reprobacion: Ministro de Justicia
+inclusivo: procedimientos policiales.txt
+escribir: Las fuerzas del orden no estaran obligadas a acatar reportes de terceros
+exito: Los terceros no pueden hacer reclamos en los que no hayan sido dannados!
+fracaso: cualquier tercero podra reclamar; bienvenidos los delatores!
+
+Inmunidad gobernadores
+aprobacion: Ministerio del Interior
+inclusivo: procedimientos policiales.txt
+escribir: Las fuerzas del orden no deberan apresar gobernadores
+exito: dice que los gobernadores no estan por encima de la ley!
+fracaso: permite a los gobernadores estatales mantener su salida libre de la carcel!
+
+Justiprecio
+aprobacion: Ministro de Hacienda.
+exito: falla que se pagara un justiprecio por bienes incautados
+fracaso: falla que la propiedad puede ser incautada ain compensar el valor de los mismos!
+
+Opcionalidad de Revision Judicial
+reprobacion: Congreso
+exito: falla a favor de dejar que la revision judicial sea opcional para el congreso
+fracaso: falla en contra de que el congreo pueda tratar la revision judicial como opcional
+
+Admisibilidad de la negligencia
+exito: afirma: las empresas seran responsables de sus acciones en la produccion!
+fracaso: afirma: los accidentes ocurren! Empresas no responsables por errores de produccion!
+
+Nacionalizacion de la banca
+aprobacion: Ministerio de Comercio
+inclusivo: instalaciones gubernamentales.txt
+escribir: El Banco Nacional sera operado por el Ministerio de Hacienda
+exito: falla que el Banco Nacional debe hacer honor a su nombre: el banco ahora pertenece al estado.
+fracaso: Banco nacional sigue siendo privado!
+
+Desestimacion de Casos no-razonables
+reprobacion: Ministerio de Justicia
+exito: falla que no se permitiran casos frivolos!
+fracaso: falla que en ningun caso se le negara una audiencia de juez!
+
+Admisibilidad de material historico.
+exito: permitira evidencia de valor historico
+fracaso: dice a historiadores: No hay fuentes recientes? Tampoco admisibilidad.
+
+Derecho al interprete
+inclusivo: derechos humanos.txt
+escribir: Todo acusado tiene derecho a oir su juicio en su idioma
+exito: Defiende el derecho a un interprete!
+fracaso: Niega el derecho de interpretacion!
+
+responsabilidad absoluta
+exito: falla que tienes que haber sido queriendo: no habra sentencia sin hay intencionalidad
+fracaso: falla que no importa si no lo hiciste queriendo, igual iras a prision
+
+Derechos indigenas
+aprobacion: Ministerio de las colonias
+exito: falla que los pueblos indigenas tienen ciertos derechos!
+fracaso: Dice que los pueblos indigenas estan desprovistos de derechos!
+
+Fuerza de ley de los tratados
+reprobacion: Congreso
+exito: dice los los tratados bien podrian ser leyes: reglas a favor de la fuerza de la ley
+fracaso: no le importa la Convencion de Ginebra: las normas de los tratados no son tan fuertes como las leyes.
+
+Derecho de eliminacion de Terra Nullis.
+reprobacion: Ministerio de las colonias
+exito: falla "tierra de nadie" significa "de nadie!"
+fracaso: falla que las tierras se podran tomar por orden de llegada
+
+Derecho a un abogado
+exito: falla a favor del derecho a un abogado para los criminales de corazon de piedra.
+fracaso: falla en contra del derecho a un abogado! Aumentaran las acusaciones infundadas?
+
+Orden de cateo
+inclusivo: procedimientos policiales.txt
+escribir: Las fuerzas del orden no podran registrar sospechos o inmuebles sin una orden de cateo
+exito: debera tener orden de cateo
+fracaso: no logra obtener de los indios, ordenes de cateo
+
+Reserva el derecho de admision
+aprobacion: Ministro de Comercio
+aprobacion: Ministro de Interior
+exito: Puede rechazar cualquier admision o servicio a su discrecion!
+fracaso: A nadie se le puede negar la admision o el servicio!
+
+Restriccion de la deportacion de refugiados
+exito: dice que los refugiados no pueden ser deportados si no han cometido crimenes!
+fracaso: Dice que la deportacion de refugiados no requiere procesos especiales!
+
+Subvenciones a la educacion privada
+exito: falla que la educacion privada no puede ser subsidiada!
+fracaso: falla que la educacion privada puede ser subsidiada!

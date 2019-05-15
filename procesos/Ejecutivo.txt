@@ -1,0 +1,452 @@
+Nombrar ministro de hacienda
+aprobacion: Congreso
+nombrar: Ministro de Hacienda
+exito: nombra nuevo Ministro de Hacienda: Fin de la corrupcion?
+fracaso: ve bloqueado su candidato a Ministro de Hacienda
+
+Nombrar ministro de exterior
+aprobacion: Congreso
+nombrar: Ministro de Exterior
+exito: nombra nuevo Ministro de Exterior: Fin del contrabando?
+fracaso: ve bloqueado su candidato a Ministro de Exterior
+
+Nombrar ministro de justicia
+aprobacion: Congreso
+nombrar: Ministro de Justicia
+exito: nombra nuevo Ministro de Justicia: prevalecera el largo brazo de la ley?
+fracaso: ve bloqueado su candidato a Ministro de Justicia
+
+Nombrar ministro de guerra
+aprobacion: Congreso
+nombrar: Ministro de Hacienda
+exito: nombra nuevo Ministro de guerra: llego la inteligencia a la inteligencia militar?
+fracaso: ve bloqueado su candidato a Ministro de Guerra
+
+Nombrar ministro de marina
+aprobacion: Congreso
+nombrar: Ministro de marina
+exito: nombra nuevo Ministro de Marina: Por fin guardaran la costa?
+fracaso: ve bloqueado su candidato a Ministro de marina
+
+Acusar monopolio
+asignar: Ministro de Justicia
+aprobacion: Tribunal Supremo
+exclusivo: procedimientos comerciales.txt
+anular: Ninguna empresa podra tomar acciones para cerrar, limitar o absorber otras en su mercado cuando estas acciones resultarian en el controll del 100% del mercado
+inclusivo: Judicial.acc
+escribir: Practicas monopolistas
+escribir: inclusivo: procedimientos comerciales.txt
+escribir: escribir: Ninguna empresa podra tomar acciones para cerrar, limitar o absorber otras en su mercado cuando estas acciones resultarian en el controll del 100% del mercado
+escribir: exito: falla en contra de los monopolios! El libre mercado exije libertad de elegir
+escribir: fracaso: falla a favor de los monopolios! El estado no debe interferir en los negocios
+exito: prepara caso contra monopolios!
+fracaso: abandona caso contra grandes empresas
+
+Inventario
+asignar: Ministro de Hacienda
+aprobacion: Ministro de Exterior
+aprobacion: Ministro de Justicia
+inclusivo: tesoreria.txt
+inclusivo: casa de la moneda.txt
+inclusivo: cono monetario.txt
+inclusivo: tierras.txt
+inclusivo: instalaciones gubernamentales.txt
+inclusivo: obras publicas.txt
+exito: nuevo realiza inventario
+fracaso: no logra tocar el inventario
+
+Traslados interbancarios
+asignar: Ministro de Correos
+aprobacion: Ministro de Hacienda
+inclusivo: procedimientos comerciales.txt
+anular: Se podra usar el servicio postal de forma gratuita
+escribir: El servicio postal garantizara la seguridad de los traslados entre bancos
+inclusivo: Legislativo.acc
+escribir: Investigar Ministro de Hacienda
+escribir: aprobacion: Ministero de Justicia
+escribir: destituir: Ministro de Correos
+escribir: exito: destituye al Ministro de Correos tras descubrir corrupcion en traslados interbancarios
+escribir: fracaso: investiga Ministro de Correos por decreto de bancos
+escribir:
+exito: realizara traslados interbancarios
+fracaso: vetado para traslados interbancarios
+
+Investigacion de deuda de tierras
+asignar: Ministro de Justicia
+aprobacion: Tribunal Supremo
+exclusivo: procedimientos comerciales.txt
+anular: Ningun atenedor nuevo de tierras podra ignorar las deudas adquiridas sobre esa tierra
+inclusivo: Judicial.acc
+escribir: Deuda de tierras
+escribir: inclusivo: procedimientos comerciales.txt
+escribir: escribir: Ningun atenedor nuevo de tierras podra ignorar las deudas adquiridas sobre esa tierra
+escribir: exito: falla en contra de terratenientes que se rehusan a pagar los impuestos atrasados de su predecesor
+escribir: fracaso: falla que ninguna familia recien mudada podra perder su tierra
+renuncia
+exito: investiga la deuda de sus padres sobre su tierra y renuncia en remordimiento!
+fracaso: abandona caso contra deudores de tierras
+
+Enviar espias
+asignar: Ministro de Exterior
+aprobacion: Presidente
+renuncia
+exito: envia espias a paises vecinos
+fracaso: decide no enviar espias
+
+Tratado comercial
+asignar: Ministro de Exterior
+aprobacion: Presidente
+inclusivo: procedimientos comerciales.txt
+escribir: Las importaciones y exportaciones hacia paises aliados seran expeditatas y revisadas someramente
+exito: logra acuerdo comercial con aliados
+fracaso: seguira negociando tratado
+
+Testificacion bajo juramento
+asignar: Ministro de Justicia
+aprobacion: Tribunal Supremo
+exclusivo: procedimientos policiales.txt
+escribir: Todo testigo debera iniciar su testimonio contestando afirmativamente a: "Jura [o promete] decir la verdad, toda la verdad, y nada mas que la verdad?"
+exito: define juramento para rendir testimonio: toda la verdad y nada mas que la verdad
+fracaso: no logra definir juramento: testimonios podran seguir prestandose sin jurar que sean verdad
+
+Enviar mision de reconocimiento
+asignar: Ministro de Guerra
+aprobacion: Ministro de Exterior
+exito: envia mision de reconocimiento a paises peligrosos
+fracaso: ve negado envio de mision de reconocimiento
+
+Enviar mision de reconocimiento
+asignar: Ministro de Marina
+aprobacion: Ministro de Exterior
+inclusivo: procedimientos de altamar.txt
+escribir: La marina reportara cualquier actividad sospechosa de conducir a fines belicos observada en costas enemigas
+exito: envia mision de reconocimiento a costas peligrosos
+fracaso: ve negado envio de mision de reconocimiento
+
+Cadena de mando
+asignar: Ministro de Guerra
+exclusivo: procedimientos policiales.txt
+escribir: Toda tropa responde a un sargento
+escribir: En caso de la muerte o desercion del Sargento, asumira las responsabilidades de Sargento el hombre de mas alto rango (Cabo o, en su defecto, Soldado Primero)
+escribir: Todo Sargento responde a un Teniente
+escribir: Un Teniente podra delegar sus responsabilidades a un Subteniente, Alferez o Sargento
+exito: define la cadena de mando: por fin sabemos que hacer si un Sargento se va!
+fracaso: deja sin definir la cadena de mando, anarquia en las fuerzas armadas!
+
+Limpiar puertos
+asignar: Ministro de Marina
+exito: limpia los puertos
+fracaso: deja los puertos sucios
+
+Construir faro
+asignar: Ministro de Marina
+aprobacion: Presidente
+exclusivo: obras publicas.txt
+escribir: Se erige un faro en el estrecho de gibraltar
+escribir: El faro sera de uso publico
+inclusivo: instalaciones gubernamentales.txt
+escribir: El faro de gibraltar sera operado y custodiado por la marina
+exito: construye faro en el estrecho de gibraltar!
+fracaso: no consigue aprobacion para nuevo faro
+
+Construir observatorio
+asignar: Ministro de Marina
+inclusivo: instalaciones gubernamentales.txt
+escribir: El observatorio de gibraltar sera operado y custodiado por la marina
+inclusivo: obras publicas.txt
+escribir: El observatorio de Gibraltar anunciara la hora y las estrellas de forma publica
+exito: construye faro en el estrecho de gibraltar!
+fracaso: no consigue aprobacion para nuevo faro
+
+Enviar ayuda
+asignar: Ministro de Exterior
+exclusivo: tesoreria.txt
+anular: Acreditar 200.000 en ayuda humanitaria
+escribir: Debitar 200.000 en ayuda humanitaria para dinamarca
+exito: envia ayuda humanitaria a victims del volcan Hekla
+fracaso: rehusa enviar ayuda humanitaria
+
+Amnestia
+aprobacion: Ministro de Justicia
+exito: otorga amnestia a combatientes de guerra civil
+fracaso: considera procesar traidores de la guerra civil sin piedad
+
+Solicitar ayuda
+asignar: Ministro de Exterior
+inclusivo: tesoreria.txt
+anular: Debitar 200.000 en ayuda humanitaria para dinamarca
+escribir: Acreditar 200.000 en ayuda humanitaria
+inclusivo: Legislativo.acc
+escribir: Investigar Ministro de Hacienda
+escribir: aprobacion: Ministero de Justicia
+escribir: destituir: Ministro de Hacienda
+escribir: exito: destituye al Ministro de Hacienda por llevarnos a depender de ayuda humanitaria
+escribir: fracaso: comienza investigacion contra Ministro de Hacienda
+escribir:
+exito: solicita ayuda humanitaria
+fracaso: no logra solicitar ayuda humanitaria
+
+Pagaderos al portador
+asignar: Ministro de Hacienda
+aprobacion: Presidente
+aprobacion: Congreso
+aprobacion: Tribunal Supremo
+exclusivo: procedimientos comerciales.txt
+escribir: Cualquier individuo que porte billetes de la Casa de la Moneda podra intercambiarlos por su equivalente en oro
+exito: respalda billetes con oro!
+fracaso: rechaza el estandar de oro!
+
+Acusar Deslealtad a la Empresa
+asignar: Ministro de Justicia
+aprobacion: Tribunal Supremo
+exclusivo: procedimientos comerciales.txt
+escribir: Todo representante de una empresa, al recibir una oferta de contrato, debera actuar a nombre de la empresa, no en el suyo mismo
+exito: condena representantes empresariales por quedarse con contratos ofrecidos a su empresa
+fracaso: hace la vista gorda ante representantes empresariales que solo piensan en su enrequecimiento personal
+
+Cruz Roja
+aprobacion: Congreso
+inclusivo: procedimientos policiales.txt
+escribir: La Cruz Roja podra intervenir en operaciones de salvamento independiente de la culpabilidad de la victima
+exito: otorga paso prioritario a la Cruz Roja en situaciones de emergencia
+fracaso: se ve obligado a rehusarle a la Cruz Roja el estatus que requieren
+
+Honor al merito
+aprobacion: Tribunal Supremo
+inclusivo: procedimientos policiales.txt
+escribir: Las fuerzas del orden podran nominar a civiles para medallas de honor al merito por actuaciones excepcionales
+inclusivo: casa de la moneda.txt
+escribir: La casa de la moneda acunnara 200 medallas de honor al merito para mantener en reserva en anticipacion de actos heroicos
+inclusivo: tesoreria.txt
+escribir: Debitar 5.000 en oro
+escribir: Se almacenan 200 medallas de oro con valor conjunto de 5.000
+exito: decreta la medalla de honor al merito ciudadano
+fracaso: postpone decision sobre medalla de honor al merito
+
+Crear base militar
+asignar: Ministro de Guerra
+aprobacion: Presidente
+inclusivo: tierras.txt
+anular: Se reservan 25.000 kilometros cuadrados para uso indigena
+anular: El maciso occidental queda apartado ahora y para siempre como Parque Nacional Picos de Europa
+escribir: Se designan 10.000 hectareas para uso militar
+inclusivo: instalaciones gubernamentales.txt
+escribir: se eregira una base militar del ejercito nacional de 10.000 hectareas
+exito: podra crear su base militar
+fracaso: no consigue permiso para construir su base
+
+Crear base naval
+asignar: Ministro de Marina
+aprobacion: Presidente
+inclusivo: instalaciones gubernamentales.txt
+escribir: se eregira una base naval
+escribir: eregira una base naval
+exito: podra crear su base
+fracaso: no consigue permiso para construir su base
+
+Construir Aduana
+asignar: Ministro de Exterior
+aprobacion: Ministro de Hacienda
+inclusivo: instalaciones gubernamentales.txt
+escribir: Se apartara una oficina en cada puerto o puesto fronterizo para realizar revisiones de aduana
+exito: construye aduanas
+fracaso: no logra inaugurar aduanas
+
+Tomar tierra para faro
+asignar: Ministro de Marina
+aprobacion: Tribunal Supremo
+exclusivo: tierras.txt
+escribir: Se expropian 10 hectareas en la costa de la mancha para uso de la marina
+exclusivo: instalaciones gubernamentales.txt
+escribir: El faro de la mancha sera de uso publico
+exito: desalmadamente expropia casa de pescador para construir otro faro!
+fracaso: no logra constuir faro; continua caos en Canal de la Mancha
+
+Correo gratis
+reprobacion: Ministro de Correos
+exclusivo: procedimientos comerciales.txt
+anular: El servicio postal garantizara la seguridad de los traslados entre bancos
+escribir: Se podra usar el servicio postal de forma gratuita
+exclusivo: Legislativo.acc
+escribir: Investigar presidente
+escribir: aprobacion: Ministro de Justicia
+escribir: reprobacion: Congreso
+escribir: censurar: Presidente
+escribir: exito: censura presidente por escandalo de correo gratis
+escribir: fracaso: declara investigacion de correo gratis como no concluyente
+escribir:
+destituir: Ministro de Correos
+exito: coloca correo gratis! Despide al Ministro de Correos para lograrlo; Congreso investigara
+fracaso: rechaza medida popular de poner el correo gratis
+
+Lineamientos de contratacion
+asignar: Ministro de Hacienda
+aprobacion: Presidente
+exclusivo: derechos humanos.txt
+escribir: En cargos publicos, la primera persona que demuestre las habilidades necesarias debe ser contratada para el puesto
+exito: fija lineamientos para contratacion de cargos publicos
+fracaso: permite que siga el nepotismo: se rehusa a fijar lineamientos para la contratacion de cargos publicos
+
+Reconocimiento veteranos Carlistas
+aprobacion: Ministro de Guerra
+aprobacion: Ministro de Hacienda
+aprobacion: Ministro de Justicia
+exclusivo: derechso humanos.txt
+escribir: Los combatientes de ejercitos anteriores al ejercito unificado nacional seran reconocidos como veteranos de guerra
+exito: otorga a Carlistas derechos de veteranos: ganar la guerra ya no es requisito para la pension!
+fracaso: niega a rebeldes Carlistas descarada solicitud de pension de veteranos de guerra
+
+Servicio Militar Obligatorio
+asignar: Ministro de Guerra
+aprobacion: Presidente
+aprobacion: Tribunal Supremo
+exclusivo: procedimeintos policiales.txt
+escribir: Las fuerzas del orden estaran autorizadas para reclutar a todo varon de 18 annos
+exclusivo: Legislativo.acc
+escribir: Investigar Ministro de Guerra
+escribir: aprobacion: Congreso
+escribir: destituir: Ministro de Guerra
+escribir: exito: destituye Ministro de Guerra por imponer servicio militar
+escribir: fracaso: continua investigacion de Ministro de Guerra
+escribir:
+exito: instituye Servicio Militar! Siempre listos para la Guerra
+fracaso: ve su iniciativa de Servicio Militar declarada inconstitucional: se mantiene el sistema de Sustitucion
+
+Derecho a huelga
+asignar: Ministro de Hacienda
+aprobacion: Presidente
+exclusivo: derechos humanos.txt
+escribir: Todo servidor publico tendra derecho a huelga
+destituir: Ministro de Hacienda
+exito: sacrifica su cargo para garantizar el derecho a huelga
+fracaso: discute derecho a huelga, pero Presidente se opone
+
+Nombrar embajadores
+aprobacion: Ministro de Exterior
+aprobacion: Congreso
+exito: nombra embajadores
+fracaso: nos deja sin embajadores!
+
+Declarar epidemia
+asignar: Ministro de Guerra
+exito: declara epidemia: Gripe Espannola se apodera del pais
+fracaso: manda a callar rumores de epidemia
+
+Investigar incendios
+asignar: Ministro de Justicia
+inclusivo: instalaciones gubernamentales.txt
+exclusivo: obras publicas.txt
+inclusivo: casa de la moneda.txt
+inclusivo: tierras.txt
+exclusivo: tesoreria.txt
+exclusivo: Judicial.acc
+escribir: Incendios provocados por impuestos
+escribir: aprobacion: Ministro de Justicia
+escribir: aprobacion: Ministro de Hacienda
+escribir: aprobacion: Ministro de Interior
+escribir: inclusivo: procedimientos comerciales.txt
+escribir: escribir: No se considerara la destruccion de un inmueble para la exoneracion de impuestos sobre el mismo
+escribir: inclusivo: procedimientos policiales.txt
+escribir: escribir: Las fuerzas del orden podran arrestar a comerciantes que intenten destruir sus propiedades para evadir impuestos
+escribir: exito: pone fin a barrer edificios bajo la alfombra: incendiarlos ya no servira para evitar pagar impuesto sobre ellos
+escribir: fracaso: falla a favor de comerciantes: se considerara la triste destruccion de sus propiedades a la hora de pagar impuestos
+escribir:
+exito: encuentra que la secuencia de incendios en epoca de impuestos fue provocada intencionalemnte y con alegocia
+fracaso: no logra concluir su investigacion de los incendios recientes
+
+Bandera a media hasta
+asignar: Ministro de Hacienda
+exito: manda a colocar las banderas a media asta
+fracaso: considera que la situacion no amerita banderas a media asta
+
+Dia de duelo
+exito: instituye dia de duelo
+fracaso: calla: no dara duelo por los sucesos recientes
+
+Feriado nacional
+exito: declara feriado nacional!
+fracaso: no dara feriado por muy significante que sea el evento
+
+Fuerte en cuarentena
+asignar: Ministro de Guerra
+exito: emite orden de cuarentena para Fuerte de San Carlos
+fracaso: permitira que sigan entrando y saliendo contagiados del Fuerte de San Carlos
+
+Jubilacion
+asignar: Ministro de Hacienda
+aprobacion: Ministro de Trabajo
+exito: fijara edad de retiro para servidores publicos
+fracaso: no fijara edad de retiro para servidores publicos
+
+Desclasificacion
+asignar: Ministro de Guerra
+aprobacion: Presidente
+inclusivo: instalaciones gubernamentales.txt
+escribir: La biblioteca Nacional exhibira los documentos de la Guerra Civil
+exito: libera documentos clasificados: Los documentos de la Guerra Civil se exhibiran en la Biblioteca Nacional
+fracaso: mantendra clasificados los documentos de la Guerra Civil
+
+Recaudar impuesto
+asignar: Ministro de Finanzas
+inclusivo: tesoreria.txt
+escribir: Cargar 2.622.957
+exito: logra recaudar sin inconvenientes
+fracaso: encuentra una evasion del 100%
+
+Investigar Partido Comunista
+asignar: Ministro de Justicia
+aprobacion: Tribunal Supremo
+inclusivo: procedimeintos comerciales.txt
+inclusivo: procedimientos policiales.txt
+inclusivo: tesoreria.txt
+inclusivo: Tribunal Supremo
+escribir: Constitucionalidad de inabilitar partido comunista
+escribir: reprobacion: Ministro de Justicia
+escribir: destituir: Ministro de Justicia
+escribir: exito: declara inconstitucional inabilitacion de Partido Comunista
+escribir: fracaso: falla a favor de que el Partido Comunista siga disuelto
+escribir:
+exito: inabilita Partido Comunista! Fin de la Amenaza Roja?
+fracaso: acusado de violentar libertades al investigar Partido Comunista
+
+Derecho a atencion medica
+asignar: Ministro de Justicia
+aprobacion: Tribunal Supremo
+inclusivo: procedimientos policiales.txt
+anular: La Cruz Roja podra intervenir en operaciones de salvamento independiente de la culpabilidad de la victima
+escribir: Toda persona tiene derecho a atencion medica inmediata
+inclusivo: Judicial.acc
+escribir: Malapraxis
+escribir: exito: falla en contra de medicos que dejaron desangrar sospechosos
+escribir: fracaso: falla a favor de medicos que dejaron desangrar sospechosos
+escribir:
+exito: encuentra malapraxis en caso de falta de inatencion medica: de ahora en adelante, no se podra negar
+fracaso: ignora caso de sospechoso desangrado: al parecer no hay problema con que los medicos no le paren a los malos
+
+Ventilacion de fabricas
+asignar: Ministro de Trabajo
+inclusivo: procedimientos comerciales.txt
+escribir: todo empleador debe garantizar ventilacion segura
+exito: aprueba regulaciones de ventilacion de fabricas
+fracaso: deja de largo propuestas para ventilar fabricas
+
+Cascos
+asignar: Ministro de Trabajo
+inclusivo: procedimientos comerciales.txt
+escribir: todo empleador debe garantizar cascos
+exito: aprueba regulaciones de cascos
+fracaso: deja de largo propuestas para cascos
+
+Avisos de seguridad
+asignar: Ministro de Trabajo
+inclusivo: procedimientos comerciales.txt
+escribir: todo empleador debe garantizar avisos de seguridad
+exito: aprueba regulaciones de avisos de seguridad
+fracaso: deja de largo propuestas para avisos de seguridad
+
+Prenatal
+asignar: Ministro de Trabajo
+inclusivo: procedimientos comerciales.txt
+escribir: todo empleador debe garantizar la ausencia prenatal remunerada
+exito: aprueba regulaciones de periodo prenatal
+fracaso: deja de largo propuestas para periodo prenatal

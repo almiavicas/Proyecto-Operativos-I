@@ -1,0 +1,440 @@
+Impuesto Unitario
+inclusivo: Ejecutivo.acc
+escribir: Recaudar impuesto
+escribir: asignar: Ministro de Finanzas
+escribir: inclusivo: tesoreria.txt
+escribir: escribir: Cargar 2.622.957
+escribir: exito: logra recaudar sin inconvenientes
+escribir: fracaso: encuentra una evasion del 100%
+escribir:
+exito: aprueba Ley para recaudar impuesto 1 vez!
+fracaso: ni siquiera puede ponerse de acuerdo para recaudar impuesto 1 vez!
+
+Emision de billetes de literarios
+aprobacion: Ministro de Hacienda
+exclusivo: casa de la moneda.txt
+inclusivo: cono monetario.txt
+anular: El billete de 100 llevara el rostro de Gustavo Adolfo Becquer
+escribir: El billete de 100 llevara el rostro de Miguel de Cervantes
+exclusivo: casa de la moneda.txt
+escribir: se emite la suma de cien millones (100.000.000) en billetes de cien (100)
+exito: aprueba nueva denominacion: el billete de 100 sera "el cervantes"
+fracaso: demora la emision del billete de 100
+
+Emision de billetes poeticos
+aprobacion: Ministro de Hacienda
+exclusivo: casa de la moneda.txt
+inclusivo: cono monetario.txt
+anular: El billete de 100 llevara el rostro de Miguel de Cervantes
+escribir: El billete de 100 llevara el rostro de Gustavo Adolfo Becquer
+exclusivo: casa de la moneda.txt
+escribir: se emite la suma de cien millones (100.000.000) en billetes de cien (100)
+exito: aprueba nueva denominacion: el billete de 100 sera "el becquer"
+fracaso: demora la emision del billete de 100
+
+Emision de billetes literarios
+aprobacion: Ministro de Hacienda
+exclusivo: cono monetario.txt
+anular: El billete de 100 llevara el rostro de Gustavo Adolfo Becquer
+escribir: El billete de 100 llevara el rostro de Miguel de Cervantes
+escribir: El billete de 50 llevara el rostro de Francisco de Quevedo
+escribir: El billete de 20 llevara el rostro de Federico Garcia Lorca
+exito: aprueba nuevo cono monetario con Cervantes, Quevedo y Lorca
+fracaso: no logra acordar nuevo cono monetario; seguiremos viendole la cara a la reina
+
+Tasa de cambio Union Latina
+reprobacion: Ministro de Interior
+aprobacion: Ministro de Exterior
+exclusivo: cono monetario.txt
+anular: El peso sera ahora y para siempre la moneda del pais
+escribir: La peseta sera ahora y para siempre la moneda del pais
+escribir: Se define el valor de una peseta como 4,5 gramos de plata
+escribir: Se establece paridad 1-1 con el franco frances
+escribir: Se establece una tasa de cambio de 3 dolares estadounidenses por peseta
+inclusivo: casa de la moneda.txt
+escribir: Las monedas seran acunnadas con plata de finura 0,75
+exito: fija valor monetario: hacia una moneda unica europea?
+fracaso: no logra acordar nuevo valor de la moneda; sigan con sus monedas picadas
+
+Tasa de cambio Imperialista
+aprobacion: Ministro de Interior
+reprobacion: Ministro de Exterior
+exclusivo: cono monetario.txt
+anular: La peseta sera ahora y para siempre la moneda del pais
+escribir: El peso sera ahora y para siempre la moneda del pais
+escribir: Se define el valor de un peso como 25 gramos de plata
+escribir: Se establece paridad 5-1 con el franco frances
+escribir: Se establece una tasa de cambio de 15 dolares estadounidenses por peseta
+inclusivo: casa de la moneda.txt
+escribir: Las monedas seran acunnadas con plata de finura 0,9
+escribir: Las monedas tendran un diametro de 38 milimetros
+exito: fija valor monetario: monedas contendran tanta plata que se podra probar al morderlas
+fracaso: no logra acordar nuevo valor de la moneda; sigan con sus monedas picadas
+
+Ley de Falsificacion
+aprobacion: Ministro de Hacienda
+inclusivo: cono monetario.txt
+escribir: Los billetes y monedas llevaran el sello de la casa de la moneda para validar su autenticidad
+inclusivo: casa de la moneda.txt
+escribir: Solo la casa de la moneda podra emitir billetes y monedas
+inclusivo: procedimientos comerciales.txt
+escribir: Los comerciantes deberan validar los billetes y monedas inmediatamente
+inclusivo: procedimientos policiales.txt
+escribir: Sera falta punible, so pena de carcel, el disenno, generacion y expendio de billetes y monedas por entes no autorizados
+exito: pone fin a fabricar dinero extra: ilegitimiza la falsificacion
+fracaso: no logra decidir los procedimientos de ilicitos por falsificacion: sigan mordiendo sus monedas
+
+Ministerio de Interior
+exclusivo: Ejecutivo.acc
+escribir: Nombrar Ministro de Interior
+escribir: aprobacion: Congreso
+escribir: nombrar: Ministro de Interior
+escribir: exito: nombra Ministro de Interior: por fin pondran orden?
+escribir: fracaso: ve bloqueado por el Congreso su candidato a Ministro de Interior 
+escribir:
+escribir: Reforma agraria
+escribir: asignar: Ministro de Interior
+escribir: aprobacion: Congreso
+escribir: inclusivo: tierras.txt
+escribir: escribir: Se asignan 1.500.000 hectareas para reparticion entre comuneros
+escribir: inclusivo: derechos humanos.txt
+escribir: escribir: Un ciudadano podra reclamar una tierra que no tiene duenno siempre y cuando sea con propositos agrarios
+escribir: inclusivo: procedimientos comerciales.txt
+escribir: escribir: Los productos agricolas deberan se adquiridos de un agricultor
+escribir: exito: logra la reforma agraria! Granjeros revindicados!
+escribir: fracaso: no consigue apoyo del congreso para la reforma agraria
+escribir:
+escribir: Desagues industriales
+escribir: asignar: Ministro de Interior
+escribir: aprobacion: Tribunal Supremo
+escribir: exclusivo: procedimientos comerciales.txt
+escribir: escribir: Ninguna compania podra verter sus desechos liquidos a menos de 500 metros de una toma de agua potable
+escribir: inclusivo: tierras.txt
+escribir: escribir: Se declara una zona de exclusion mutua de 500 metros al rededor de los reservorios donde ninguna industria nueva se podra construir
+escribir: escribir: Las industrias actualmente ubicadas a menos de 500 metros de los reservorios desde antes de la regulacion podran seguir operando
+escribir: inclusivo: procedimientos policiales.txt
+escribir: escribir: La policia podra arrestar a individuos hallados echando desechos solidos al agua potable
+escribir: exito: impone nuevas regulaciones a los desagues industriales!
+escribir: fracaso: y Tribunal Supremo no creen en la teoria de germenes! Seguiran permitiendo basura en el agua
+escribir:
+escribir: Proteccion al consumidor
+escribir: asignar: Ministro de Interior
+escribir: aprobacion: Tribunal Supremo
+escribir: inclusivo: procedimientos comerciales.txt
+escribir: escribir:
+escribir:
+escribir: Parque Nacional
+escribir: asignar: Ministro de Interior
+escribir: aprobacion: Presidente
+escribir: aprobacion: Congreso
+escribir: exclusivo: tierras.txt
+escribir: anular: El maciso occidental podra ser minado comercialmente
+escribir: inclusivo: instalaciones gubernamentales.txt
+escribir: escribir: El Parque Nacional Picos de Europa tendra rutas y senderos propios para la conservacion
+escribir: inclusivo: tierras.txt
+escribir: escribir: El maciso occidental queda apartado ahora y para siempre como Parque Nacional Picos de Europa
+escribir: exito: autorizado a decretar nuevo parque nacional: El maciso occidental ahora sera el Parque Nacional Picos de Europa
+escribir: fracaso: ve negado su peticion a crear un Parque Nacional
+escribir:
+escribir: Salario minimo
+escribir: asignar: Minsitro de interior
+escribir: aprobacion: Presidente
+escribir: exclusivo: procedimientos comerciales.txt
+escribir: escribir: todo comericante debe garantizar el salario minimo
+escribir: exclusivo: derechos humanos.txt
+escribir: escribir: todo empleado tiene derecho a exigir su salario minimo
+escribir: renuncia
+escribir: exito: fija salario minimo y abandona el cargo
+escribir: fracaso: deja de lado la cuestion del salario minimo
+escribir:
+exito: crea Ministerio de Interior: cuide su tierra!
+fracaso: decide que un Ministerio de Interior no hace falta
+
+Ley de Ciudadania
+aprobacion: Ministro de Interior
+aprobacion: Presidente
+inclusivo: normas de inmigracion.txt
+escribir: Seran ciudadanos por nacimiento los nacidos en territorio nacional
+escribir: Seran ciudadanos por naturalizacion los residentes por diez (10) annos continuos
+escribir: No podran optar a ciudadania los que tengan una lealtad exclusiva a otro pais
+inclusivo: Ejecutivo.acc
+escribir: Reporte de Naturalizacion
+escribir: asignar: Ministro de Interior
+escribir: aprobacion: Ministro de Interior
+escribir: exito: encuentra 500.000 nuevos ciudadanos que cumplen con requisitos de naturalizacion
+escribir: fracaso: no emite reporte de naturalizacion
+escribir:
+exito: aprueba nuevas normas de naturalizacion! Se avecina una avalancha de inmigrantes?
+fracaso: no sabe que es un ciudadano: Ley de ciudadania no aprobada
+
+Construccion del Parlamento
+inclusivo: instalaciones gubernamentales.txt
+escribir: La sede del gobierno legislativo se ubicara en la interseccion de la Calle Fernaflor con Calle Zorilla, Madrid
+exclusivo: obras publicas.txt
+escribir: Se demuele la estructura del Convento Espiritu Santo, ubicado en Calle Fernaflor con Zorilla, Madrid
+escribir: Se construye en Calle Fernaflor con Zorilla, Madrid, un edificio en estilo Neoclasico con un salon abovedado con fin de ser sede del congreso
+inclusivo: Ejecutivo.acc
+escribir: asignar: Ministro de Hacienda
+escribir: inclusivo: tesoreria.txt
+escribir: escribir: Debitar 1.500.000
+escribir: exito: desembolsa 1,5 milliones para construir nueva sede del Congreso
+escribir: fracaso: se rehusa a pagarles a constructora de nueva sede del Congreso
+escribir:
+exito: se seculariza: construira nueva sede en la ubicacion actual del Convento Espiritu Santo
+fracaso: decide preservar el Convento Espiritu Santo: no habra nueva sede del congreso
+
+Ley de Bancarrota
+aprobacion: Presidente
+aprobacion: Tribunal Supremo
+inclusivo: procedimientos comerciales.txt
+escribir: Cualquier ciudadano espannol podra declararse en quiebra o bancarrota
+escribir: La declaracion de quiebra detendra cualquier procedimiento de incautacion de activos
+escribir: En casos de quiebra o bancarrota, los acreedores seran pagados por Concursal
+exito: pone fin a la incautacion de los pobres: nueva ley de bancarrotas
+fracaso: ve su proyecto de ley de bancarrotas declarado inconstitucional
+
+Ley de Pasaportes
+aprobacion: Presidente
+aprobacion: Congreso
+exclusivo: normas de inmigracion.txt
+escribir: Toda persona debe portar pasaporte
+exito: acaba con la entrada libre! A partir de hoy, todos deberan tener pasaporte
+fracaso: decide no reforzar la frontera: sigue valerse entrar sin pasaporte
+
+Ministerio de Correos
+exclusivo: Ejecutivo.acc
+escribir: Nombrar Ministro de Correos
+escribir: aprobacion: Congreso
+escribir: nombrar: Ministro de Correos
+escribir: exito: nombra Ministro de Correos: fin de repartidores privados?
+escribir: fracaso: ve bloqueado por el Congreso su candidato a Ministro de Correos
+escribir:
+escribir: Procedimientos de ordenar correo
+escribir: asignar: Ministro de Correos
+escribir: inclusivo: procedimientos de correos.txt
+escribir: escribir: el correo se spearara dependiendo de su destino
+escribir: exito: aclara procedimientos para ordenar correo
+escribir: fracaso: no logra ordenar el correo!
+escribir:
+escribir: Vehiculo de correos
+escribir: asignar: Ministro de Correos
+escribir: aprobacion: Ministro de Hacienda
+escribir: exclusivo: procedimientos comerciales.txt
+escribir: escribir: Los comericantes esperaran su correo del vehiculo de reparticion estandar
+escribir: inclusivo: instalaciones gubernamentales.txt
+escribir: escribir: Los vehiculos oficiales para repartir el correo se guardaran en establos oficiales
+escribir: exito: despliega carros repartidores
+escribir: fracaso: manda a carteros a repartir a pie: cancela proyecto de carro repartidor
+escribir:
+exito: crea Ministerio de Correos: por fin orden a los servicios de reparticion?
+fracaso: decide que un Ministerio de Correos no hace falta
+
+Ilegalizacion de Piratas
+aprobacion: Presidente
+exclusivo: procedimientos de altamar.txt
+anular: El Ministerio de Marina podra, a su discresion, nombrar corsarios para abordar navios extranjeros
+escribir: Cualquier navio encontrado navegando bajo bandera negra, sera incautado por la marina
+inclusivo: procedimientos comerciales.txt
+escribir: Cualquier comericante que no pueda probar el origen de su mercancia, sera considerado complice de piratas
+exclusivo: Ejecutivo.acc
+escribir: Cazar Piratas
+escribir: asignar: Ministro de Marina
+escribir: exito: atrapa una docena de piratas desalmados que robaban a la patria
+escribir: fracaso: nunca podra atrapar a los Robin Hood modernos de altamar!
+escribir:
+escribir: Escandalo Pirata
+escribir: asignar: Ministro de Marina
+escribir: renuncia
+escribir: exito: es atrapado haciendo tratos sucios con piratas
+escribir: fracaso: exonerado en investigacion de tratos con piratas
+escribir:
+exito: aprueba ley en contra de la pirateria en altamar
+fracaso: demora decision sobre ilegalidad de los piratas
+
+Legalizacion de Piratas
+reprobacion: Presidente
+exclusivo: procedimientos de altamar.txt
+anular: Cualquier navio encontrado navegando bajo bandera negra, sera incautado por la marina
+escribir: El Ministerio de Marina podra, a su discresion, nombrar corsarios para abordar navios extranjeros
+exclusivo: Ejecutivo.acc
+escribir: Exito corsarios
+escribir: asignar: Ministro de Marina
+escribir: inclusivo: tesoreria.txt
+escribir: escribir: Cargar 10.500
+escribir: exito: recupera, a traves de corsarios, 10.500 en objetos robados por las viles garras de nuestros enemigos
+escribir: fracaso: no obtiene frutos de sus corsarios sanguinarios
+escribir:
+escribir: Escandalo Pirata
+escribir: asignar: Ministro de Marina
+escribir: renuncia
+escribir: exito: es atrapado haciendo tratos sucios con piratas
+escribir: fracaso: procesa corsarios sin ninguna falta de integridad aparente
+escribir:
+exito: aprueba ley de corsarios: piratas, a legalizarse!
+fracaso: demora decision sobre legalidad de los piratas
+
+Prestamo Unitario
+aprobacion: Ministro de Hacienda
+inclusivo: tesoreria.txt
+escribir: Acreditar 1.000.000
+exito: aprueba prestamo millonario
+fracaso: no logra que le aprueben un prestamito sensato
+
+Sistema SI de Unidades
+reprobacion: Ministro de Interior
+exclusivo: procedimientos comerciales.txt
+escribir: Todos los productos deberan denotar sus cantidades en metros, gramos y litros
+exclusivo: obras publicas.txt
+escribir: Todos los caminos marcaran sus distancias en kilometros
+inclusivo: normas de inmigracion.txt
+escribir: Todos los viajeros deberan declarar sus valores en metros, gramos y litros
+exito: decide a favor del metro: se acabaron las leguas y las varas
+fracaso: no consigue apoyo para la conversion a sistema metrico
+
+Derecho de Peticion
+reprobacion: Tribunal Supremo
+inclusivo: derechos humanos.txt
+escribir: Todo ciudadano podra presentar ante el congreso una peticion o reclamacion con 100.000 firmas
+exito: aprueba el derecho a peticion! Reclame con tan solo 100.000 firmas
+fracaso: ve su iniciativa de Derecho de Peticion declarada inconstitucional
+
+Ministerio de Colonias
+inclusivo: procedimientos comerciales.txt
+leer: Todo producto transportado entre las colonias y la Madre Patria debera pagar un impuesto de 10% sobre su valor neto
+exclusivo: Ejecutivo.acc
+escribir: Nombrar Ministro de Colonias
+escribir: aprobacion: Congreso
+escribir: nombrar: Ministro de Colonias
+escribir: exito: nombra Ministro de Colonias: fin del problema de representacion?
+escribir: fracaso: ve bloqueado por el Congreso su candidato a Ministro de Colonias
+escribir:
+escribir: Reservacion Indigena
+escribir: asignar: Ministro de Colonias
+escribir: aprobacion: Presidente
+escribir: exclusivo: tierras.txt
+escribir: escribir: Se reservan 25.000 kilometros cuadrados para uso indigena
+escribir: exito: aprueba reservar espacio para los indigenas
+escribir: fracaso: no encuentra donde poner los indigenas
+escribir:
+escribir: Gobernadores
+escribir: asignar: Ministro de Colonias
+escribir: aprobacion: Congreso
+escribir: inclusivo: instalaciones gubernamentales.txt
+escribir: escribir: Se asignara una oficina del palacio de gobierno de cada colonia para fungir de oficina del gobernador
+escribir: escribir: En las colonias donde no exista un palacio de gobierno, la oficina del gobernador se ubicara en el cuartel
+escribir: inclusivo: procedimientos policiales.txt
+escribir: escribir: Los entes garantes del orden en las colonias responderan directamente al gobernador
+escribir: inclusivo: procedimientos comerciales.txt
+escribir: escribir: Los gobernadores estaran a cargo de ejercer los procedimientos comerciales en las colonias
+escribir: inclusivo: procedimientos de altamar.txt
+escribir: escribir: En los casos de criminales capturados en altamar, seran llevados ante el gobernador de la colonia mas cercana
+escribir: exito: designa gobernadores y gobernaciones
+escribir: fracaso: retrasa nombramiento de gobernadores y su definicion de responsabilidades
+escribir:
+escribir: Dia de la Madre Patria
+escribir: asignar: Ministro de Colonias
+escribir: exito: establece dia de la Madre Patria! La celebracion no se hara esperar!
+escribir: fracaso: cancela dia de la Madre Patria, perdiendo oportunidad para frenar revueltas
+escribir:
+escribir: Ciudadania para colonos
+escribir: asignar: Ministro de Colonias
+escribir: aprobacion: Tribunal Supremo
+escribir: exito: decide otorgar la ciudadania a los habitantes de las colonias
+escribir: fracaso: no obtiene fallo aprobatorio; colonos no recibiran ciudadania
+escribir:
+exito: crea Ministerio de Colonias: Todas las voces seran iguales?
+fracaso: decide que un Ministerio de Colonias no hace falta
+
+Impuesto a la Importacion
+reprobacion: Ministro de Exterior
+inclusivo: normas de inmigracion.txt
+escribir: Todo producto importado debera pagar un impuesto de 21% por sobre su valor neto
+inclusivo: Ejecutivo.acc
+escribir: asignar: Ministro de Exterior
+escribir: inclusivo: tesoreria.txt
+escribir: escribir: Cargar 575.200
+escribir: exito: logra recaudar impuesto a la importacion sin problemas
+escribir: fracaso: no logra que importadores cooperen con impuesto de importacion
+escribir:
+exito: aprueba impuesto a la importacion! Seguira una estimulacion de la economia?
+fracaso: niega impuesto a la importacion; proliferaran los productos extranjeros?
+
+Impuesto entre Provincias
+reprobacion: Tribunal Supremo
+inclusivo: obras publicas.txt
+escribir: Se construye un punto de control en los caminos que crucen la frontera entre provincias
+escribir: Todo producto transportado entre provincias debera pagar un impuesto de 1% sobre su valor neto en los puntos de control
+inclusivo: Ejecutivo.acc
+escribir: Recaudar Impuesto entre provincias
+escribir: asignar: Ministro de Interior
+escribir: inclusivo: tesoreria.txt
+escribir: escribir: Cargar 131.195
+escribir: exito: logra recaudar impuesto al transporte entre provincias
+escribir: fracaso: no logra que los transportistas cooperen con el impuesto al transporte entre provincias
+escribir:
+exito: aprueba impuesto entre provincias!
+fracaso: ve su proyecto de ley para un impuesto entre provincias declarado inconstitucional
+
+Impuesto recurrente
+inclusivo: Ejecutivo.acc
+escribir: Recaudar impuesto 2
+escribir: asignar: Ministro de Finanzas
+escribir: inclusivo: Ejecutivo.acc
+escribir: escribir: Recaudar impuesto 3
+escribir: inclusivo: tesoreria.txt
+escribir: escribir: Cargar 2.622.957
+escribir: escribir: asignar: Ministro de Finanzas
+escribir: escribir: inclusivo: tesoreria.txt
+escribir: escribir: escribir: Cargar 2.622.957
+escribir: escribir: exito: logra recaudar sin inconvenientes
+escribir: escribir: fracaso: encuentra una evasion del 100%
+escribir: escribir:
+escribir: exito: logra recaudar sin inconvenientes
+escribir: fracaso: encuentra una evasion del 100%
+escribir:
+exito: aprueba impuesto recurrente como columna vertebral de la economia
+fracaso: se relaja con respecto a los impuestos: fracasa propuesta de impuesto recurrente
+
+Pago Deuda Guerra
+aprobacion: Ministro de Hacienda
+exclusivo: tesoreria.txt
+escribir: Debitar 10.000.000
+exito: toma la iniciativa de pagar la deuda de guerra
+fracaso: le dice a los acreedores "han surgido otras necesidades"; la deuda de guerra sigue en pie
+
+Prestamo Deficitario
+reprobacion: Ministro de Hacienda
+inclusivo: Ejecutivo.acc
+escribir: asignar: Ministro de Hacienda
+escribir: inclusivo: tesoreria.txt
+escribir: escribir: acreditar 2.500.000
+escribir: inclusivo: Ejecutivo.acc
+escribir: escribir: asignar: Ministro de Hacienda
+escribir: escribir: inclusivo: tesoreria.txt
+escribir: escribir: escribir: acreditar 2.500.000
+escribir: escribir: exito: transfiere el prestamo del presente periodo
+escribir: escribir: fracaso: no pudo otorgar el prestamo del periodo actual
+escribir: escribir:
+escribir: exito: transfiere el prestamo del presente periodo
+escribir: fracaso: no pudo otorgar el prestamo del periodo actual
+escribir:
+exito: resolvera el deficit con deuda! Aprueba prestamo recurrente
+fracaso: prefiere que el gobierno se cierre a endeudarse!
+
+Ley de Visas
+aprobacion: Presidente
+aprobacion: Ministro de Exterior
+exclusivo: normas de inmigracion.txt
+leer: Toda persona debe portar pasaporte
+escribir: Todo visitante debe llevar visa en su pasaporte
+inclusivo: Ejecutivo.acc
+escribir: asignar: Ministro de Exterior
+escribir: inclusivo: normas de inmigracion.txt
+escribir: escribir: Las visas deben emitirse en las embajadas
+escribir: inclusivo: tesoreria.txt
+escribir: escribir: Debitar 100.000
+escribir: exito: aprueba emision de visas
+escribir: fracaso: pospone implementacion de ley de visas
+escribir:
+exito: coloca barreras nuevas al turismo: los visitantes ahora deben portar visa
+fracaso: rechaza medidas sensatas para controlar la avalancha de turistas
