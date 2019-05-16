@@ -2,7 +2,7 @@
 #include <semaphore.h>
 #include "ordered_list.c"
 #define NAME_LEN 40
-#define LINE_LEN 250
+#define LINE_LEN 350
 
 typedef struct {
 	pid_t from;
@@ -53,6 +53,8 @@ void init_ministry(char * name);
 
 ministry * create_ministry(pid_t id);
 
+action * create_action();
+
 request * create_request(pid_t from, pid_t to, pid_t value);
 
 static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2]);
@@ -75,7 +77,7 @@ static void sig_handler_jud_usr2(int signal);
 
 static void sig_handler_exec_usr1(int signal);
 
-char * read_keyword(FILE * f);
+void read_keyword(FILE * f, char * word);
 
 int accepted(float success_rate);
 

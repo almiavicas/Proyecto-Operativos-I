@@ -7,7 +7,7 @@ executive * create_executive(pid_t id) {
 		return NULL;
 	}
 	ex->id = id;
-	ex->success_rate = rand();
+	ex->success_rate = rand() / RAND_MAX;
 	return ex;
 }
 
@@ -18,7 +18,7 @@ legislative * create_legislative(pid_t id) {
 		return NULL;
 	}
 	leg->id = id;
-	leg->success_rate = rand();
+	leg->success_rate = rand() / RAND_MAX;
 	return leg;
 }
 
@@ -98,26 +98,50 @@ request * create_request(pid_t from, pid_t to, int response) {
 	return req;
 }
 
-char * read_keyword(FILE * f) {
-	char * word = malloc(sizeof(char) * 15);
-	if (word == NULL) {
+action * create_action() {
+	action * act = malloc(sizeof(action));
+	if (act == NULL) {
 		fprintf(stderr, "%s\n", "Not enought memory");
 		return NULL;
 	}
+	act->name = malloc(sizeof(char) * NAME_LEN);
+	if (act->name == NULL) {
+		fprintf(stderr, "Not enought memory\n");
+		free(act);
+		return NULL;
+	}
+	act->success = malloc(sizeof(char) * LINE_LEN);
+	if (act->success == NULL) {
+		fprintf(stderr, "%s\n", "Not enought memory");
+		free(act->name);
+		free(act);
+		return NULL;
+	}
+	act->failure = malloc(sizeof(char) * LINE_LEN);
+	if (act->failure == NULL) {
+		fprintf(stderr, "%s\n", "Not enought memory");
+		free(act->success);
+		free(act->name);
+		free(act);
+		return NULL;
+	}
+	return act;
+}
+
+void read_keyword(FILE * f, char * word) {
 	int i = 0;
 	char c;
 	while ((c = fgetc(f)) != ':') {
 		if (c == '\n') {
-			free(word);
-			return NULL;
+			printf("print de read_keyword\n" );
 		}
 		word[i++] = c;
 	}
-	return word;
+	word[i] = '\0';
 }
 
 int accepted(float success_rate) {
-	float f = (float) rand();
+	float f = (float) rand() / (float)RAND_MAX;
 	if (success_rate >= f) {
 		return 1;
 	}

@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 #include "structs.c"
 
 
@@ -23,9 +24,9 @@
 #define JUDICIAL_REC "jud_reccess"
 
 
-const char file_exec[] = "Ejecutivo.acc";
-const char file_leg[] = "Legislativo.acc";
-const char file_jud[] = "Judicial.acc";
+const char file_exec[] = "Ejecutivo.txt";
+const char file_leg[] = "Legislativo.txt";
+const char file_jud[] = "Judicial.txt";
 const char aprobacion[] = "aprobacion";
 const char reprobacion[] = "reprobacion";
 const char asignar[] = "asignar";
@@ -72,6 +73,7 @@ int press_leg[2];
 
 int main(int argc, char const *argv[]) {
 	// Initial config
+	srand(time(NULL));
 	struct sigaction act;
 	act.sa_handler = sig_handler_master;
 	sigemptyset(&(act.sa_mask));
@@ -113,24 +115,32 @@ int main(int argc, char const *argv[]) {
 	sem_close(req_mutex);
 	sem_close(meta_mutex);
 
-
+	printf("Ready to open files\n");
+	FILE * target;
+	char ch;
 	EXECUTIVE_F = fopen(file_exec, "r+");
 	if (EXECUTIVE_F == NULL) {
 		fprintf(stderr, "%s %s\n", "File not found:", file_exec);
 		return 1;
 	}
+	target = fopen("copy\\Ejecutivo.txt", "w+");
+	while ((ch = fgetc(EXECUTIVE_F)) != EOF) fputc(ch, target);
 	fclose(EXECUTIVE_F);
 	LEGISLATIVE_F = fopen(file_leg, "r+");
 	if (LEGISLATIVE_F == NULL) {
 		fprintf(stderr, "%s %s\n", "File not found:", file_leg);
 		return 1;
 	}
+	target = fopen("copy\\Legislativo.txt", "w+");
+	while ((ch = fgetc(LEGISLATIVE_F)) != EOF) fputc(ch, target);
 	fclose(LEGISLATIVE_F);
 	JUDICIAL_F = fopen(file_jud, "r+");
 	if (JUDICIAL_F == NULL) {
 		fprintf(stderr, "%s %s\n", "File not found:", file_jud);
 		return 1;
 	}
+	target = fopen("copy\\Judicial.txt", "w+");
+	while ((ch = fgetc(JUDICIAL_F)) != EOF) fputc(ch, target);
 	fclose(JUDICIAL_F);
 	MINISTRIES_F = fopen("Ministros.txt", "w+");
 	if (MINISTRIES_F == NULL) {
@@ -150,6 +160,9 @@ int main(int argc, char const *argv[]) {
 		return 1;
 	}
 	fclose(METADATA_F);
+
+	printf("Ready to create childs\n");
+	fflush(stdout);
 	// Create powers
 	for (int i = 0; i < 3; i++) {
 		if (fork() == 0) {
@@ -310,23 +323,37 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
 	process_metadata();
-	return 0;
-
+	action * acti = create_action();
+	if (acti == NULL) {
+		kill(master, SIGUSR1);
+	}
+	char * value = malloc(sizeof(char)*LINE_LEN);
+	char * keyword = malloc(sizeof(char) * NAME_LEN);
 	// Task management
 	while (1) {
 		int reccess_time = 1;
 		int reccess_count = 0;
+		
 		fseek(EXECUTIVE_F, 0, SEEK_SET);
-		while (feof(EXECUTIVE_F)) {
-			action act;
+		while (!feof(EXECUTIVE_F)) {
+			printf("Reading actions from Ejecutivo.txt\n");
+			fflush(stdout);
 			long int action_start = ftell(EXECUTIVE_F);
-			act.name = fgets(act.name, LINE_LEN, EXECUTIVE_F);
+			fflush(stdout);
+			acti->name = fgets(acti->name, LINE_LEN, EXECUTIVE_F);
+			acti->name[strlen(acti->name) - 1] = '\0';
+			printf("Viendo si se acepta la accion seleccionada: %s\n", acti->name);
+			
 			if (!accepted(0.2f)) {
-				while (strlen(act.name) > 2 && feof(EXECUTIVE_F)) fgets(act.name, LINE_LEN, EXECUTIVE_F);
-				while (strlen(act.name) < 2 && feof(EXECUTIVE_F)) fgets(act.name, LINE_LEN, EXECUTIVE_F);
-				if (feof(EXECUTIVE_F)) fseek(EXECUTIVE_F, - strlen(act.name), SEEK_CUR);
+				printf("Accion no aceptada\n");
+				fflush(stdout);
+				while (strlen(acti->name) > 2 && !feof(EXECUTIVE_F)) fgets(acti->name, LINE_LEN, EXECUTIVE_F);
+				while (strlen(acti->name) < 2 && !feof(EXECUTIVE_F)) fgets(acti->name, LINE_LEN, EXECUTIVE_F);
+				if (!feof(EXECUTIVE_F)) fseek(EXECUTIVE_F, - strlen(acti->name), SEEK_CUR);
 				continue;
 			}
+			printf("Accion aceptada, empezando a ejecutar\n");
+			fflush(stdout);
 			int end = 0;
 			FILE * opened_file;
 			sem_t * mutex;
@@ -342,15 +369,26 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 			// 	2 -> means the action was sent to a minister, so no printing is needed.
 			int success = 1;
 			while (!end) {
-				char * keyword = read_keyword(EXECUTIVE_F);
-				char * value = fgets(value, LINE_LEN, EXECUTIVE_F);
+				printf("Leyendo keyword\n");
+				fflush(stdout);
+				read_keyword(EXECUTIVE_F, keyword);
+				printf("Keyword encontrada: %s.\n", keyword);
+				fflush(stdout);
+				printf("Leyendo valor\n");
+				fflush(stdout);
+				value = fgets(value, LINE_LEN, EXECUTIVE_F);
 				value[strlen(value)-1] = '\0';
-				while(value[0] = ' ') ++value;
+				printf("Validando keyword\n");
+				fflush(stdout);
+				while(value[0] == ' ') ++value;
 				if (keyword == NULL) {
 					fprintf(stderr, "%s %s\n", "Error reading file:", file_exec);
 					return -1;
 				}
+				printf("Comparando keyword\n");
+				fflush(stdout);
 				if (!(strcmp(keyword, aprobacion) && strcmp(keyword, reprobacion)) && success) {
+					printf("Pidiendo aprobacion de %s\n", value);
 					if (!strcmp(value, presidente)) {
 						success = accepted(president.success_rate);
 					}
@@ -371,7 +409,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						char * to_id;
 						char response;
 						char * line;
-						while (feof(PRESIDENT_REQUESTS_F)) {
+						while (!feof(PRESIDENT_REQUESTS_F)) {
 							fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 							parse_request(line, from_id, to_id, &response);
 							int from = atoi(from_id);
@@ -396,7 +434,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						char * to_id;
 						char response;
 						char * line;
-						while (feof(PRESIDENT_REQUESTS_F)) {
+						while (!feof(PRESIDENT_REQUESTS_F)) {
 							fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 							parse_request(line, from_id, to_id, &response);
 							int from = atoi(from_id);
@@ -422,7 +460,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						long int min_position;
 						char * l;
 						min_position = ftell(MINISTRIES_F);
-						for (l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+						for (l = fgets(l, LINE_LEN, MINISTRIES_F); !feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
 							l += 101;
 							int same = 1;
 							for (int i = 0; i < strlen(value) && same; i++) {
@@ -456,6 +494,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					}
 				}
 				else if (!strcmp(keyword, crear) && success) {
+					printf("Creando ministerio de %s\n", value);
 					sem_wait(ministry_mutex);
 					if (success = accepted(president.success_rate)) {
 						init_ministry(value);
@@ -470,10 +509,11 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				}
 				else if (!strcmp(keyword, asignar) && success) {
 					// Asigna esta tarea a un ministro
+					printf("Asignando ministro de %s\n", value);
 					sem_wait(ministry_mutex);
 					MINISTRIES_F = fopen("Ministros.txt", "r+");
 					int found = 0;
-					while(feof(MINISTRIES_F)) {
+					while(!feof(MINISTRIES_F)) {
 						char * line;
 						fgets(line, LINE_LEN, MINISTRIES_F);
 						int equal = 1;
@@ -484,8 +524,8 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 							found = 1;
 							// We move the cursor to after the '|' char
 							fseek(MINISTRIES_F, -(strlen(bksp100) + strlen(bksp50) + 2), SEEK_CUR);
-							fprintf(MINISTRIES_F, "%s", act.name);
-							fseek(MINISTRIES_F, strlen(bksp100) - strlen(act.name) + 1, SEEK_CUR);
+							fprintf(MINISTRIES_F, "%s", acti->name);
+							fseek(MINISTRIES_F, strlen(bksp100) - strlen(acti->name) + 1, SEEK_CUR);
 							fprintf(MINISTRIES_F, "%lo", ftell(EXECUTIVE_F));
 							break;
 						}
@@ -497,6 +537,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					end = 1;
 				}
 				else if (!strcmp(keyword, exclusivo) && success) {
+					printf("Abriendo archivo de forma exclusiva: %s\n", value);
 					if (opened_file != NULL) {
 						if (wrote) fprintf(opened_file, "\n");
 						fclose(opened_file);
@@ -516,12 +557,13 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					opened_file = fopen(value, "r+");
 					if (opened_file == NULL) {
 						fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
-						// TO DO: tell the parent to kill everyone
+						kill(master, SIGUSR1);
 						return -1;
 					}
 					exclusive_sem = 1;
 				}
 				else if (!strcmp(keyword, inclusivo) && success) {
+					printf("Abriendo archivo de forma inclusiva: %s\n", value);
 					if (opened_file != NULL) {
 						if (wrote) fprintf(opened_file, "\n");
 						fclose(opened_file);
@@ -546,24 +588,28 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					opened_file = fopen(value, "r+");
 					if (opened_file == NULL) {
 						fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
-						// TO DO: tell the parent to kill everyone
+						kill(master, SIGUSR1);
 						return -1;
 					}
 					exclusive_sem = 0;
 				}
 				else if (!strcmp(keyword, leer) && success) {
+					printf("Leyendo de archivo\n");
 					if (!find_string(value, opened_file)) success = 0;
 				}
 				else if (!strcmp(keyword, escribir) && success) {
+					printf("Escribiendo en archivo\n");
 					int curr_cursor = ftell(opened_file);
 					fseek(opened_file, 0, SEEK_END);
 					fprintf(opened_file, "%s\n", value);
 					wrote = 1;
 				}
 				else if (!strcmp(keyword, anular) && success) {
+					printf("Anulando de archivo\n");
 					if (find_string(value, opened_file)) success = 0;
 				}
 				else if (!strcmp(keyword, nombrar) && success) {
+					printf("Nombrando %s\n", value);
 					// Nombra un ministro o magistrado
 					// Se asume que ya se ha pedido permiso al congreso
 					if (value[1] = 'a') {
@@ -576,7 +622,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						while (*(value++) != ' ');
 						while (*(value++) != ' ');
 						MINISTRIES_F = fopen("Ministros.txt", "r+");
-						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); !feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
 							while (*(l++) != ' ');
 							while (*(l++) != ' ');
 							int same = 1;
@@ -595,6 +641,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				}
 				else if (!strcmp(keyword, destituir) && success) {
 					// Destituye un ministro o magistrado
+					printf("Destituyendo %s\n", value);
 					if (value[1] = 'a') {
 						// magistrado
 						write_pipe("PE", ex_jud);
@@ -607,7 +654,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						while (*(value++) != ' ');
 						sem_wait(ministry_mutex);
 						MINISTRIES_F = fopen("Ministros.txt", "r+");
-						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); !feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
 							while (*(l++) != ' ');
 							while (*(l++) != ' ');
 							int same = 1;
@@ -633,6 +680,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					}
 				}
 				else if (!strcmp(keyword, disolver) && success) {
+					printf("Disolviendo congreso\n");
 					// Disuelve el congreso
 					kill(leg_id, SIGTERM);
 					// Se comunica con el padre para que cree un nuevo congreso
@@ -642,16 +690,18 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					process_metadata();
 				}
 				else if (!strcmp(keyword, exito)) {
-					act.success = value;
+					acti->success = value;
 				}
 				else if (!strcmp(keyword, fracaso)) {
-					act.failure = value;
+					acti->failure = value;
 					end = 1;
 				}
 				else {
 					fprintf(stderr, "%s %s\n", "Error reading action in file:", file_exec);
 					return -1;
 				}
+				free(keyword);
+				free(value);
 				
 				if (success == 2) {
 					// We did not finish of reading the action, so we need to
@@ -662,18 +712,18 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				}
 				// In this case, we only nead to read the next empty line;
 				char * l;
-				for(l = fgets(l, LINE_LEN, EXECUTIVE_F); feof(EXECUTIVE_F) && strlen(l) < 2; l = fgets(l, LINE_LEN, EXECUTIVE_F));
-				if (feof(EXECUTIVE_F)) fseek(EXECUTIVE_F, - strlen(l), SEEK_CUR);
+				for(l = fgets(l, LINE_LEN, EXECUTIVE_F); !feof(EXECUTIVE_F) && strlen(l) < 2; l = fgets(l, LINE_LEN, EXECUTIVE_F));
+				if (!feof(EXECUTIVE_F)) fseek(EXECUTIVE_F, - strlen(l), SEEK_CUR);
 				
 			}
 			if (success == 2) continue;
 			if (success == 1 && accepted(president.success_rate)) {
-				write(ex_press[1], act.success, strlen(act.success) + 1);
+				write(ex_press[1], acti->success, strlen(acti->success) + 1);
 				long int action_end = ftell(EXECUTIVE_F);
 				fseek(EXECUTIVE_F, action_start, SEEK_SET);
 				while (ftell(EXECUTIVE_F) < action_end) fprintf(EXECUTIVE_F, " ");
 			}
-			else write(ex_press[1], act.failure, strlen(act.failure) + 1);
+			else write(ex_press[1], acti->failure, strlen(acti->failure) + 1);
 			sem_post(print_sem);
 			kill(getpid(), SIGSTOP);
 		}
@@ -686,7 +736,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 		char * to_id;
 		char response;
 		char * line;
-		while (feof(PRESIDENT_REQUESTS_F)) {
+		while (!feof(PRESIDENT_REQUESTS_F)) {
 			fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 			if (line[0] = ' ') continue;
 			parse_request(line, from_id, to_id, &response);
@@ -726,7 +776,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				sem_wait(req_mutex);
 				fclose(PRESIDENT_REQUESTS_F);
 				PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
-				while (feof(PRESIDENT_REQUESTS_F)) {
+				while (!feof(PRESIDENT_REQUESTS_F)) {
 					fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 					parse_request(line, from_id, to_id, &response);
 					int from = atoi(from_id);
@@ -757,7 +807,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				sem_wait(req_mutex);
 				fclose(PRESIDENT_REQUESTS_F);
 				PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
-				while (feof(PRESIDENT_REQUESTS_F)) {
+				while (!feof(PRESIDENT_REQUESTS_F)) {
 					fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 					parse_request(line, from_id, to_id, &response);
 					int from = atoi(from_id);
@@ -819,20 +869,24 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
 	process_metadata();
-	return 0;
+	action * acti = create_action();
+	if (acti == NULL) {
+		kill(master, SIGUSR1);
+	}
+	char * value = malloc(sizeof(char)*LINE_LEN);
+	char * keyword = malloc(sizeof(char) * NAME_LEN);
 	// Task management
 	while (1) {
 		int reccess_time = 1;
 		int reccess_count = 0;
 		fseek(LEGISLATIVE_F, 0, SEEK_SET);
-		while (feof(LEGISLATIVE_F)) {
-			action act;
+		while (!feof(LEGISLATIVE_F)) {
 			long int action_start = ftell(LEGISLATIVE_F);
-			act.name = fgets(act.name, LINE_LEN, LEGISLATIVE_F);
+			acti->name = fgets(acti->name, LINE_LEN, LEGISLATIVE_F);
 			if (!accepted(0.2f)) {
-				while (strlen(act.name) > 2 && feof(LEGISLATIVE_F)) fgets(act.name, LINE_LEN, LEGISLATIVE_F);
-				while (strlen(act.name) < 2 && feof(LEGISLATIVE_F)) fgets(act.name, LINE_LEN, LEGISLATIVE_F);
-				if (feof(LEGISLATIVE_F)) fseek(LEGISLATIVE_F, - strlen(act.name), SEEK_CUR);
+				while (strlen(acti->name) > 2 && !feof(LEGISLATIVE_F)) fgets(acti->name, LINE_LEN, LEGISLATIVE_F);
+				while (strlen(acti->name) < 2 && !feof(LEGISLATIVE_F)) fgets(acti->name, LINE_LEN, LEGISLATIVE_F);
+				if (!feof(LEGISLATIVE_F)) fseek(LEGISLATIVE_F, - strlen(acti->name), SEEK_CUR);
 				continue;
 			}
 			int end = 0;
@@ -842,10 +896,10 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 			int wrote = 0;
 			int success = 1;
 			while (!end) {
-				char * keyword = read_keyword(LEGISLATIVE_F);
-				char * value = fgets(value, LINE_LEN, LEGISLATIVE_F);
+				read_keyword(LEGISLATIVE_F, keyword);
+				value = fgets(value, LINE_LEN, LEGISLATIVE_F);
 				value[strlen(value)-1] = '\0';
-				while (value[0] = ' ') ++value;
+				while (value[0] == ' ') ++value;
 				if (keyword == NULL) {
 					fprintf(stderr, "%s %s\n", "Error reading file:", file_leg);
 					return -1;
@@ -890,7 +944,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 					opened_file = fopen(value, "r+");
 					if (opened_file == NULL) {
 						fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
-						// TO DO: tell the parent to kill everyone
+						kill(master, SIGUSR1);
 						return -1;
 					}
 					exclusive_sem = 1;
@@ -920,8 +974,8 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 					opened_file = fopen(value, "r+");
 					if (opened_file == NULL) {
 						fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
-						// TO DO: tell the parent to kill everyone
-						return -1;
+						kill(master, SIGUSR1);
+						return 0;
 					}
 					exclusive_sem = 0;			
 				}
@@ -950,7 +1004,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 						while (*(value++) != ' ');
 						sem_wait(ministry_mutex);
 						MINISTRIES_F = fopen("Ministros.txt", "r+");
-						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); !feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
 							while (*(l++) != ' ');
 							while (*(l++) != ' ');
 							int same = 1;
@@ -985,25 +1039,25 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 					process_metadata();
 				}
 				else if (!strcmp(keyword, exito)) {
-					act.success = value;
+					acti->success = value;
 				}
 				else if (!strcmp(keyword, fracaso)) {
-					act.failure = value;
+					acti->failure = value;
 					end = 1;
 				}
 				else {
-					fprintf(stderr, "%s\n", "Error reading file Legislativo.acc");
+					fprintf(stderr, "%s\n", "Error reading file Legislativo.txt");
 					kill(master, SIGUSR1);
 				}
 			}
 
 			if (success && accepted(congress.success_rate)) {
-				write(leg_press[1], act.success, strlen(act.success) + 1);
+				write(leg_press[1], acti->success, strlen(acti->success) + 1);
 				long int action_end = ftell(LEGISLATIVE_F);
 				fseek(LEGISLATIVE_F, action_start, SEEK_SET);
 				while (ftell(LEGISLATIVE_F) < action_end) fprintf(LEGISLATIVE_F, " ");
 			}
-			else write(leg_press[1], act.failure, strlen(act.failure) + 1);
+			else write(leg_press[1], acti->failure, strlen(acti->failure) + 1);
 			sem_post(print_sem);
 			kill(getpid(), SIGSTOP);
 		}
@@ -1047,20 +1101,24 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 	kill(getpid(), SIGSTOP);
 	printf("%s\n", "Daddy woke me up");
 	process_metadata();
-	return 0;
+	action * acti = create_action();
+	if (acti == NULL) {
+		kill(master, SIGUSR1);
+	}
+	char * value = malloc(sizeof(char)*LINE_LEN);
+	char * keyword = malloc(sizeof(char) * NAME_LEN);
 	// Task Management
 	while (1) {
 		int reccess_time = 1;
 		int reccess_count = 0;
 		fseek(JUDICIAL_F, 0, SEEK_SET);
-		while (feof(JUDICIAL_F)) {
-			action act;
+		while (!feof(JUDICIAL_F)) {
 			long int action_start = ftell(JUDICIAL_F);
-			act.name = fgets(act.name, LINE_LEN, JUDICIAL_F);
+			acti->name = fgets(acti->name, LINE_LEN, JUDICIAL_F);
 			if (!accepted(0.2f)) {
-				while (strlen(act.name) > 2 && feof(JUDICIAL_F)) fgets(act.name, LINE_LEN, JUDICIAL_F);
-				while (strlen(act.name) < 2 && feof(JUDICIAL_F)) fgets(act.name, LINE_LEN, JUDICIAL_F);
-				if (feof(JUDICIAL_F)) fseek(JUDICIAL_F, - strlen(act.name), SEEK_CUR);
+				while (strlen(acti->name) > 2 && !feof(JUDICIAL_F)) fgets(acti->name, LINE_LEN, JUDICIAL_F);
+				while (strlen(acti->name) < 2 && !feof(JUDICIAL_F)) fgets(acti->name, LINE_LEN, JUDICIAL_F);
+				if (!feof(JUDICIAL_F)) fseek(JUDICIAL_F, - strlen(acti->name), SEEK_CUR);
 				continue;
 			}
 			int end = 0;
@@ -1070,12 +1128,12 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 			int wrote = 0;
 			int success = 1;
 			while (!end) {
-				char * keyword = read_keyword(JUDICIAL_F);
-				char * value = fgets(value, LINE_LEN, JUDICIAL_F);
+				read_keyword(JUDICIAL_F, keyword);
+				value = fgets(value, LINE_LEN, JUDICIAL_F);
 				value[strlen(value)-1] = '\0';
-				while (value[0] = ' ') ++value;
+				while (value[0] == ' ') ++value;
 				if (keyword == NULL) {
-					fprintf(stderr, "%s\n", "Error reading file Judicial.acc");
+					fprintf(stderr, "%s\n", "Error reading file Judicial.txt");
 					return -1;
 				}
 				if ((!strcmp(keyword, reprobacion) || !strcmp(keyword, aprobacion)) && success){
@@ -1125,8 +1183,9 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					opened_file = fopen(value, "r+");
 					if (opened_file == NULL) {
 						fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
-						// TO DO: tell the parent to kill everyone
-						return -1;
+						// Parent kills everyone
+						kill(master, SIGUSR1);
+						return 0;
 					}
 					exclusive_sem = 1;
 				}
@@ -1155,8 +1214,9 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					opened_file = fopen(value, "r+");
 					if (opened_file == NULL) {
 						fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
-						// TO DO: tell the parent to kill everyone
-						return -1;
+						// Tell the parent to kill everyone
+						kill(master, SIGUSR1);
+						return 0;
 					}
 					exclusive_sem = 0;			
 				}
@@ -1178,7 +1238,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 						if (tribune.mag_count > 0) {
 							if (--tribune.mag_count == 0) {
 								// there are no more magisters
-								// TO DO
+								kill(jud_id, SIGSTOP);
 							}
 							float accumm = 0;
 							for (int i = 0; i < tribune.mag_count; i++) {
@@ -1194,7 +1254,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 						while (*(value++) != ' ');
 						sem_wait(ministry_mutex);
 						MINISTRIES_F = fopen("Ministros.txt", "r+");
-						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+						for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); !feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
 							while (*(l++) != ' ');
 							while (*(l++) != ' ');
 							int same = 1;
@@ -1221,24 +1281,24 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					}
 				}
 				else if (!strcmp(keyword, exito)) {
-					act.success = value;
+					acti->success = value;
 				}
 				else if (!strcmp(keyword, fracaso)) {
-					act.failure = value;
+					acti->failure = value;
 					end = 1;
 				}
 				else {
-					fprintf(stderr, "%s\n", "Error reading file Judicial.acc");
+					fprintf(stderr, "%s\n", "Error reading file Judicial.txt");
 					return -1;
 				}
 			}
 			if (success && accepted(tribune.success_rate)) {
-				write(jud_press[1], act.success, strlen(act.success) + 1);
+				write(jud_press[1], acti->success, strlen(acti->success) + 1);
 				long int action_end = ftell(JUDICIAL_F);
 				fseek(JUDICIAL_F, action_start, SEEK_SET);
 				while (ftell(JUDICIAL_F) < action_end) fprintf(JUDICIAL_F, " ");
 			}
-			else write(jud_press[1], act.failure, strlen(act.failure) + 1);
+			else write(jud_press[1], acti->failure, strlen(acti->failure) + 1);
 			sem_post(print_sem);
 			kill(getpid(), SIGSTOP);
 		}
@@ -1259,14 +1319,14 @@ void init_ministry(char * name) {
 	MINISTRIES_F = fopen("Ministros.txt", "a+");
 	if (MINISTRIES_F == NULL) {
 		fprintf(stderr, "%s\n", "File not found: Ministros.txt");
-		// TO DO:
 		// Tell the parent to kill everyone
+		kill(master, SIGUSR1);
 	}
 	// El formato de ministro es el siguiente
 	// 		100 caracteres para nombre de ministerio
 	//  	50 caracteres para nombre de ministro
 	//  	100 caracteres para nombre de la accion
-	// 		50 caracteres para offset dentro del archivo de Ejecutivo.acc
+	// 		50 caracteres para offset dentro del archivo de Ejecutivo.txt
 	fprintf(MINISTRIES_F, "%s|%s|%s|%s\n", bksp100, bksp50, bksp100, bksp50);
 	fseek(MINISTRIES_F, -((strlen(bksp100) * 2) + (strlen(bksp50) * 2) + 4), SEEK_CUR);
 	fprintf(MINISTRIES_F, "%s\n", name);
@@ -1281,8 +1341,9 @@ static int ministry_task(pid_t id){
 	sem_t * print_sem = sem_open(MINISTRY_PRINT_SEM, O_CREAT);
 	sem_t * min_sem = sem_open(MINISTRY_SEM, O_CREAT);
 	char * line;
+	write_metadata('M');
 	process_metadata();
-	while (feof(MINISTRIES_F)) line = fgets(line, LINE_LEN, MINISTRIES_F);
+	while (!feof(MINISTRIES_F)) line = fgets(line, LINE_LEN, MINISTRIES_F);
 	char * name = line;
 	while (line[0] != ' ') line++;
 	*line = '\0';
@@ -1292,7 +1353,7 @@ static int ministry_task(pid_t id){
 	// Task management
 	while(1) {
 		MINISTRIES_F = fopen("Ministros.txt", "r+");
-		while (feof(MINISTRIES_F)) {
+		while (!feof(MINISTRIES_F)) {
 			char * line = fgets(line, LINE_LEN, MINISTRIES_F);
 			int same = 1;
 			for (int i = 0; i < strlen(mi.name) && same; i++) {
@@ -1329,7 +1390,12 @@ static int ministry_task(pid_t id){
 						position = atoi(line);
 						fseek(EXECUTIVE_F, position, SEEK_SET);
 						int end = 0;
-						action act;
+						action * acti = create_action();
+						if (acti == NULL) {
+							kill(master, SIGUSR1);
+						}
+						char * value = malloc(sizeof(char)*LINE_LEN);
+						char * keyword = malloc(sizeof(char) * NAME_LEN);
 						long int action_start = ftell(EXECUTIVE_F);
 						FILE * opened_file;
 						sem_t * mutex;
@@ -1345,11 +1411,11 @@ static int ministry_task(pid_t id){
 						int success = 1;
 						int permission = 0;
 						while (!end) {
-							char * keyword = read_keyword(EXECUTIVE_F);
-							char * value = fgets(value, LINE_LEN, EXECUTIVE_F);
+							read_keyword(EXECUTIVE_F, keyword);
+							value = fgets(value, LINE_LEN, EXECUTIVE_F);
 							if (success) success = is_ministry_active(mi.name);
 							value[strlen(value)-1] = '\0';
-							while(value[0] = ' ') ++value;
+							while(value[0] == ' ') ++value;
 							if (keyword == NULL) {
 								fprintf(stderr, "%s %s\n", "Error reading file:", file_exec);
 								return -1;
@@ -1364,7 +1430,7 @@ static int ministry_task(pid_t id){
 									char * to;
 									char response;
 									char * line;
-									while (feof(PRESIDENT_REQUESTS_F)) {
+									while (!feof(PRESIDENT_REQUESTS_F)) {
 										line = fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 										parse_request(line, from, to, &response);
 										if (atoi(from) == getpid() && atoi(&response) != -1) {
@@ -1381,7 +1447,7 @@ static int ministry_task(pid_t id){
 									char * to;
 									char response;
 									char * line;
-									while (feof(PRESIDENT_REQUESTS_F)) {
+									while (!feof(PRESIDENT_REQUESTS_F)) {
 										line = fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 										parse_request(line, from, to, &response);
 										if (atoi(from) == getpid() && atoi(&response) != -1) {
@@ -1398,7 +1464,7 @@ static int ministry_task(pid_t id){
 									char * to;
 									char response;
 									char * line;
-									while (feof(PRESIDENT_REQUESTS_F)) {
+									while (!feof(PRESIDENT_REQUESTS_F)) {
 										line = fgets(line, LINE_LEN, PRESIDENT_REQUESTS_F);
 										parse_request(line, from, to, &response);
 										if (atoi(from) == getpid() && atoi(&response) != -1) {
@@ -1416,7 +1482,7 @@ static int ministry_task(pid_t id){
 									long int min_position;
 									char * l;
 									min_position = ftell(MINISTRIES_F);
-									for (l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+									for (l = fgets(l, LINE_LEN, MINISTRIES_F); !feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
 										l += 101;
 										int same = 1;
 										for (int i = 0; i < strlen(value) && same; i++) {
@@ -1498,7 +1564,7 @@ static int ministry_task(pid_t id){
 								opened_file = fopen(value, "r+");
 								if (opened_file == NULL) {
 									fprintf(stderr, "%s %s\n", "Error opening file in executive task:", value);
-									// TO DO: tell the parent to kill everyone
+									kill(master, SIGUSR1);
 									return -1;
 								}
 								exclusive_sem = 0;
@@ -1550,10 +1616,10 @@ static int ministry_task(pid_t id){
 								}
 							}
 							else if (!strcmp(keyword, exito)) {
-								act.success = value;
+								acti->success = value;
 							}
 							else if (!strcmp(keyword, fracaso)) {
-								act.failure = value;
+								acti->failure = value;
 								end = 1;
 							}
 							else {
@@ -1584,9 +1650,9 @@ static int ministry_task(pid_t id){
 								
 							sem_wait(min_sem);
 							if (success == 1 && accepted(mi.success_rate)) {
-								write(min_press[1], act.success, strlen(act.success) + 1);
+								write(min_press[1], acti->success, strlen(acti->success) + 1);
 							}
-							else write(ex_press[1], act.failure, strlen(act.failure) + 1);
+							else write(ex_press[1], acti->failure, strlen(acti->failure) + 1);
 							sem_post(print_sem);
 						}
 					}
@@ -1615,11 +1681,30 @@ static void sig_handler_master(int signal) {
 	sem_unlink(JUDICIAL_REC);
 	FILE * sem_file = fopen("Semaforos.txt", "r");
 	if (sem_file != NULL) {
-		for (char * line = fgets(line, LINE_LEN, sem_file); feof(sem_file); line = fgets(line, LINE_LEN, sem_file)) {
+		for (char * line = fgets(line, LINE_LEN, sem_file); !feof(sem_file); line = fgets(line, LINE_LEN, sem_file)) {
 			line[strlen(line)-1] = '\0';
 			sem_unlink(line);
 		}
 	}
+	METADATA_F = fopen("Metadata.txt", "r");
+	if (METADATA_F != NULL) {
+		for (char * line = fgets(line, LINE_LEN, sem_file); !feof(sem_file); line = fgets(line, LINE_LEN, sem_file)) {
+			line[strlen(line)-1] = '\0';
+			line += 2;
+			kill(atoi(line), SIGTERM);
+		}
+	}
+	FILE * source, * target;
+	char ch;
+	source = fopen("copy/Legislativo.txt", "r");
+	target = fopen("Legislativo.txt", "w+");
+	while ((ch = fgetc(source)) != EOF) fputc(ch, target);
+	source = fopen("copy/Ejecutivo.txt", "r");
+	target = fopen("Ejecutivo.txt", "w+");
+	while ((ch = fgetc(source)) != EOF) fputc(ch, target);
+	source = fopen("copy/Judicial.txt", "r");
+	target = fopen("Judicial.txt", "w+");
+	while ((ch = fgetc(source)) != EOF) fputc(ch, target);
 	kill(master, SIGTERM);
 }
 
@@ -1636,7 +1721,7 @@ static void sig_handler_leg_usr1(int signal) {
 		else if(line[1]=='A'){
 			fseek(LEGISLATIVE_F, 0, SEEK_SET);
 			char * l;
-			for (l = fgets(l, LINE_LEN, LEGISLATIVE_F); feof(LEGISLATIVE_F); l = fgets(l, LINE_LEN, LEGISLATIVE_F)) {
+			for (l = fgets(l, LINE_LEN, LEGISLATIVE_F); !feof(LEGISLATIVE_F); l = fgets(l, LINE_LEN, LEGISLATIVE_F)) {
 				if (strlen(l) > 2) {
 					if (accepted(congress.success_rate)) {
 						// borrar la accion
@@ -1692,7 +1777,11 @@ static void sig_handler_jud_usr1(int signal) {
 		read(ex_jud[0], line, 2);
 		if (line[1] == 'C') {
 			tribune.mag_count++;
-			tribune.magister[tribune.mag_count - 1] = rand();
+			if (tribune.mag_count == 1) {
+				// There were no magisters before, so the process was stopped
+				kill(jud_id, SIGCONT);
+			}
+			tribune.magister[tribune.mag_count - 1] = rand() / RAND_MAX;
 			float acumm = 0;
 			for (int i = 0; i<tribune.mag_count; i++){
 				acumm =+tribune.magister[i];
@@ -1704,7 +1793,8 @@ static void sig_handler_jud_usr1(int signal) {
 		else if (line[1] == 'E'){
 			if (tribune.mag_count>0) {
 				if (--tribune.mag_count == 0) {
-					// TO DO: there are no magisters left
+					// No magisters left, so we stop our work
+					kill(jud_id, SIGSTOP);
 				}
 				float acumm = 0;
 				for (int i = 0; i<tribune.mag_count; i++){
@@ -1748,7 +1838,7 @@ static void sig_handler_exec_usr1(int signal){
 
 	fseek(EXECUTIVE_F, 0, SEEK_SET);
 	char * l;
-	for (l = fgets(l, LINE_LEN, EXECUTIVE_F); feof(EXECUTIVE_F); l = fgets(l, LINE_LEN, EXECUTIVE_F)) {
+	for (l = fgets(l, LINE_LEN, EXECUTIVE_F); !feof(EXECUTIVE_F); l = fgets(l, LINE_LEN, EXECUTIVE_F)) {
 		if (strlen(l) > 2) {
 			if (accepted(president.success_rate)) {
 				// borrar la accion
@@ -1813,7 +1903,7 @@ void process_metadata() {
 		fprintf(stderr, "%s\n", "Could not locate file: Metadata.txt");
 		exit(1);
 	}
-	for(char * line = fgets(line, LINE_LEN, METADATA_F); feof(METADATA_F); line = fgets(line, LINE_LEN, METADATA_F)) {
+	for(char * line = fgets(line, LINE_LEN, METADATA_F); !feof(METADATA_F); line = fgets(line, LINE_LEN, METADATA_F)) {
 		if (line[0] = 'P') {
 			line += 2;
 			exec_id = atoi(line);
@@ -1835,7 +1925,7 @@ void process_metadata() {
 
 int is_ministry_active(char * name) {
 	MINISTRIES_F = fopen("Ministros.txt", "r");
-	for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
+	for (char * l = fgets(l, LINE_LEN, MINISTRIES_F); !feof(MINISTRIES_F); l = fgets(l, LINE_LEN, MINISTRIES_F)) {
 		int same = 1;
 		for (int i = 0; i < strlen(name) && same; i++) {
 			if (name[i] != l[i]) same = 0;
