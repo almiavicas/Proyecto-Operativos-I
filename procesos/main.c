@@ -387,12 +387,12 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 				}
 				printf("Comparando keyword\n");
 				fflush(stdout);
-				if (!(strcmp(keyword, aprobacion) && strcmp(keyword, reprobacion)) && success) {
+				if ((0 == strcmp(keyword, aprobacion) || 0 == strcmp(keyword, reprobacion)) && success) {
 					printf("Pidiendo aprobacion de %s\n", value);
-					if (!strcmp(value, presidente)) {
+					if (0 == strcmp(value, presidente)) {
 						success = accepted(president.success_rate);
 					}
-					else if(!strcmp(value, congreso)) {
+					else if(0 == strcmp(value, congreso)) {
 						write_pipe("PP", ex_leg);
 						// We interrupt the congress to tell them to answer us
 						kill(leg_id, SIGUSR1);
@@ -424,7 +424,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						sem_post(req_mutex);
 						sem_close(req_mutex);
 					}
-					else if(!strcmp(value, tribunal)) {
+					else if(0 == strcmp(value, tribunal)) {
 						write_pipe("PP", ex_jud);
 						kill(jud_id, SIGUSR1);
 						sem_t * req_mutex = sem_open(REQUEST_SEM, O_CREAT);
@@ -493,7 +493,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 
 					}
 				}
-				else if (!strcmp(keyword, crear) && success) {
+				else if (0 == strcmp(keyword, crear) && success) {
 					printf("Creando ministerio de %s\n", value);
 					sem_wait(ministry_mutex);
 					if (success = accepted(president.success_rate)) {
@@ -507,7 +507,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					
 					sem_post(ministry_mutex);
 				}
-				else if (!strcmp(keyword, asignar) && success) {
+				else if (0 == strcmp(keyword, asignar) && success) {
 					// Asigna esta tarea a un ministro
 					printf("Asignando ministro de %s\n", value);
 					sem_wait(ministry_mutex);
@@ -536,7 +536,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					else success = 2;
 					end = 1;
 				}
-				else if (!strcmp(keyword, exclusivo) && success) {
+				else if (0 == strcmp(keyword, exclusivo) && success) {
 					printf("Abriendo archivo de forma exclusiva: %s\n", value);
 					if (opened_file != NULL) {
 						if (wrote) fprintf(opened_file, "\n");
@@ -562,7 +562,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					}
 					exclusive_sem = 1;
 				}
-				else if (!strcmp(keyword, inclusivo) && success) {
+				else if (0 == strcmp(keyword, inclusivo) && success) {
 					printf("Abriendo archivo de forma inclusiva: %s\n", value);
 					if (opened_file != NULL) {
 						if (wrote) fprintf(opened_file, "\n");
@@ -593,22 +593,22 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					}
 					exclusive_sem = 0;
 				}
-				else if (!strcmp(keyword, leer) && success) {
+				else if (0 == strcmp(keyword, leer) && success) {
 					printf("Leyendo de archivo\n");
 					if (!find_string(value, opened_file)) success = 0;
 				}
-				else if (!strcmp(keyword, escribir) && success) {
+				else if (0 == strcmp(keyword, escribir) && success) {
 					printf("Escribiendo en archivo\n");
 					int curr_cursor = ftell(opened_file);
 					fseek(opened_file, 0, SEEK_END);
 					fprintf(opened_file, "%s\n", value);
 					wrote = 1;
 				}
-				else if (!strcmp(keyword, anular) && success) {
+				else if (0 == strcmp(keyword, anular) && success) {
 					printf("Anulando de archivo\n");
 					if (find_string(value, opened_file)) success = 0;
 				}
-				else if (!strcmp(keyword, nombrar) && success) {
+				else if (0 == strcmp(keyword, nombrar) && success) {
 					printf("Nombrando %s\n", value);
 					// Nombra un ministro o magistrado
 					// Se asume que ya se ha pedido permiso al congreso
@@ -639,7 +639,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						}
 					}
 				}
-				else if (!strcmp(keyword, destituir) && success) {
+				else if (0 == strcmp(keyword, destituir) && success) {
 					// Destituye un ministro o magistrado
 					printf("Destituyendo %s\n", value);
 					if (value[1] = 'a') {
@@ -679,7 +679,7 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 						// fseek(EXECUTIVE_F, actual_cursor, SEEK_SET);
 					}
 				}
-				else if (!strcmp(keyword, disolver) && success) {
+				else if (0 == strcmp(keyword, disolver) && success) {
 					printf("Disolviendo congreso\n");
 					// Disuelve el congreso
 					kill(leg_id, SIGTERM);
@@ -689,10 +689,10 @@ static int executive_task(pid_t id, int ex_jud[2], int ex_leg[2], int ex_press[2
 					kill(exec_id,SIGSTOP);
 					process_metadata();
 				}
-				else if (!strcmp(keyword, exito)) {
+				else if (0 == strcmp(keyword, exito)) {
 					acti->success = value;
 				}
-				else if (!strcmp(keyword, fracaso)) {
+				else if (0 == strcmp(keyword, fracaso)) {
 					acti->failure = value;
 					end = 1;
 				}
@@ -904,18 +904,18 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 					fprintf(stderr, "%s %s\n", "Error reading file:", file_leg);
 					return -1;
 				}
-				if ((!strcmp(keyword, reprobacion) || !strcmp(keyword, aprobacion)) && success) {
-					if (!strcmp(value, congreso)) {
+				if ((0 == strcmp(keyword, reprobacion) || 0 == strcmp(keyword, aprobacion)) && success) {
+					if (0 == strcmp(value, congreso)) {
 						success = accepted(congress.success_rate);
 					}
-					else if(!strcmp(value,presidente)){
+					else if(0 == strcmp(value,presidente)){
 						send_president_request(leg_id,exec_id,0);
 						kill(leg_id,SIGSTOP);
 						char response[2];
 						read(ex_leg[0], response, 2);
 						if (response[1] == 'N') success = 0;
 					}
-					else if(!strcmp(value,tribunal)){
+					else if(0 == strcmp(value,tribunal)){
 						write_pipe("CP", leg_jud);
 						kill(jud_id, SIGUSR2);
 						kill(leg_id, SIGSTOP);
@@ -924,7 +924,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 						if (response[1] == 'N') success = 0;
 					}
 				}
-				else if (!strcmp(keyword, exclusivo) && success) {
+				else if (0 == strcmp(keyword, exclusivo) && success) {
 					if (opened_file != NULL) {
 						if (wrote) fprintf(opened_file, "\n");
 						fclose(opened_file);
@@ -949,7 +949,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 					}
 					exclusive_sem = 1;
 				}
-				else if (!strcmp(keyword, inclusivo) && success) {
+				else if (0 == strcmp(keyword, inclusivo) && success) {
 					if (opened_file != NULL) {
 						if (wrote) fprintf(opened_file, "\n");
 						fclose(opened_file);
@@ -979,19 +979,19 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 					}
 					exclusive_sem = 0;			
 				}
-				else if (!strcmp(keyword, leer) && success) {
+				else if (0 == strcmp(keyword, leer) && success) {
 					if (!find_string(value, opened_file)) success = 0;
 				}
-				else if (!strcmp(keyword, escribir) && success) {
+				else if (0 == strcmp(keyword, escribir) && success) {
 					int curr_cursor = ftell(opened_file);
 					fseek(opened_file, 0, SEEK_END);
 					fprintf(opened_file, "%s\n", value);
 					wrote = 1;
 				}
-				else if (!strcmp(keyword, anular) && success) {
+				else if (0 == strcmp(keyword, anular) && success) {
 					if (find_string(value, opened_file)) success = 0;
 				}
-				else if (!strcmp(keyword, destituir) && success) {
+				else if (0 == strcmp(keyword, destituir) && success) {
 					if (value[1] = 'a') {
 						// magistrado
 						write_pipe("PE", leg_jud);
@@ -1030,7 +1030,7 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 						// fseek(EXECUTIVE_F, actual_cursor, SEEK_SET);
 					}
 				}
-				else if (!strcmp(keyword, censurar) && success) {
+				else if (0 == strcmp(keyword, censurar) && success) {
 					
 					kill(exec_id, SIGTERM);
 					write_pipe("PC", leg_press);
@@ -1038,10 +1038,10 @@ static int legislative_task(pid_t id, int ex_leg[2], int leg_jud[2], int jud_leg
 					kill(leg_id, SIGSTOP);
 					process_metadata();
 				}
-				else if (!strcmp(keyword, exito)) {
+				else if (0 == strcmp(keyword, exito)) {
 					acti->success = value;
 				}
-				else if (!strcmp(keyword, fracaso)) {
+				else if (0 == strcmp(keyword, fracaso)) {
 					acti->failure = value;
 					end = 1;
 				}
@@ -1136,12 +1136,12 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					fprintf(stderr, "%s\n", "Error reading file Judicial.txt");
 					return -1;
 				}
-				if ((!strcmp(keyword, reprobacion) || !strcmp(keyword, aprobacion)) && success){
+				if ((0 == strcmp(keyword, reprobacion) || 0 == strcmp(keyword, aprobacion)) && success){
 					
-					if (!strcmp(value, tribunal)){
+					if (0 == strcmp(value, tribunal)){
 						success = accepted(tribune.success_rate);
 					}
-					else if(!strcmp(value,presidente)){
+					else if(0 == strcmp(value,presidente)){
 						send_president_request(jud_id,exec_id,0);
 						kill(jud_id,SIGSTOP);
 						char response[2];
@@ -1149,7 +1149,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 						if (response[1] == 'N') success = 0;
 					}
 
-					else if(!strcmp(value,congreso)){
+					else if(0 == strcmp(value,congreso)){
 						write_pipe("TP", jud_leg);
 						kill(leg_id, SIGUSR2);
 						kill(jud_id, SIGSTOP);
@@ -1163,7 +1163,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					}
 
 				}
-				else if (!strcmp(keyword, exclusivo) && success) {
+				else if (0 == strcmp(keyword, exclusivo) && success) {
 					if (opened_file != NULL) {
 						if (wrote) fprintf(opened_file, "\n");
 						fclose(opened_file);
@@ -1189,7 +1189,7 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					}
 					exclusive_sem = 1;
 				}
-				else if (!strcmp(keyword, inclusivo) && success) {
+				else if (0 == strcmp(keyword, inclusivo) && success) {
 					if (opened_file != NULL) {
 						if (wrote) fprintf(opened_file, "\n");
 						fclose(opened_file);
@@ -1220,19 +1220,19 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 					}
 					exclusive_sem = 0;			
 				}
-				else if (!strcmp(keyword, leer) && success) {
+				else if (0 == strcmp(keyword, leer) && success) {
 					if (!find_string(value, opened_file)) success = 0;
 				}
-				else if (!strcmp(keyword, escribir) && success) {
+				else if (0 == strcmp(keyword, escribir) && success) {
 					int curr_cursor = ftell(opened_file);
 					fseek(opened_file, 0, SEEK_END);
 					fprintf(opened_file, "%s\n", value);
 					wrote = 1;
 				}
-				else if (!strcmp(keyword, anular) && success) {
+				else if (0 == strcmp(keyword, anular) && success) {
 					if (find_string(value, opened_file)) success = 0;
 				}
-				else if (!strcmp(keyword, destituir) && success) {
+				else if (0 == strcmp(keyword, destituir) && success) {
 					if (value[1] = 'a') {
 						// magistrado
 						if (tribune.mag_count > 0) {
@@ -1280,10 +1280,10 @@ static int judicial_task(pid_t id, int ex_jud[2], int leg_jud[2], int jud_leg[2]
 						// fseek(EXECUTIVE_F, actual_cursor, SEEK_SET);
 					}
 				}
-				else if (!strcmp(keyword, exito)) {
+				else if (0 == strcmp(keyword, exito)) {
 					acti->success = value;
 				}
-				else if (!strcmp(keyword, fracaso)) {
+				else if (0 == strcmp(keyword, fracaso)) {
 					acti->failure = value;
 					end = 1;
 				}
@@ -1372,12 +1372,12 @@ static int ministry_task(pid_t id){
 					char * action_name = line + 152;
 					while (line[152] != ' ') line++;
 					line[152] = '\0';
-					if (!strcmp(action_name, end_task)) {
+					if (0 == strcmp(action_name, end_task)) {
 						fprintf(MINISTRIES_F, " ");
 						return 0;
 					}
 
-					else if (!strcmp(action_name, PERM)) {
+					else if (0 == strcmp(action_name, PERM)) {
 						fseek(MINISTRIES_F, 253, SEEK_CUR);
 						if (accepted(mi.success_rate)) fprintf(MINISTRIES_F, "1");
 						else fprintf(MINISTRIES_F, "0");
@@ -1420,8 +1420,8 @@ static int ministry_task(pid_t id){
 								fprintf(stderr, "%s %s\n", "Error reading file:", file_exec);
 								return -1;
 							}
-							if (!(strcmp(keyword, aprobacion) && strcmp(keyword, reprobacion)) && success) {
-								if (!strcmp(value, presidente)) {
+							if ((0 == strcmp(keyword, aprobacion) || 0 == strcmp(keyword, reprobacion)) && success) {
+								if (0 == strcmp(value, presidente)) {
 									permission = 1;
 									send_president_request(getpid(), exec_id, -1);
 									kill(getpid(), SIGSTOP);
@@ -1439,7 +1439,7 @@ static int ministry_task(pid_t id){
 										}
 									}
 								}
-								else if(!strcmp(value, congreso)) {
+								else if(0 == strcmp(value, congreso)) {
 									send_president_request(getpid(), leg_id, -1);
 									kill(getpid(), SIGSTOP);
 									PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
@@ -1456,7 +1456,7 @@ static int ministry_task(pid_t id){
 										}
 									}
 								}
-								else if(!strcmp(value, tribunal)) {
+								else if(0 == strcmp(value, tribunal)) {
 									send_president_request(getpid(), jud_id, -1);
 									kill(getpid(), SIGSTOP);
 									PRESIDENT_REQUESTS_F = fopen("PedidosPresidenciales.txt", "r+");
@@ -1515,7 +1515,7 @@ static int ministry_task(pid_t id){
 								}
 							}
 							
-							else if (!strcmp(keyword, exclusivo) && success) {
+							else if (0 == strcmp(keyword, exclusivo) && success) {
 								if (opened_file != NULL) {
 									if (wrote) fprintf(opened_file, "\n");
 									fclose(opened_file);
@@ -1540,7 +1540,7 @@ static int ministry_task(pid_t id){
 								}
 								exclusive_sem = 1;
 							}
-							else if (!strcmp(keyword, inclusivo) && success) {
+							else if (0 == strcmp(keyword, inclusivo) && success) {
 								if (opened_file != NULL) {
 									if (wrote) fprintf(opened_file, "\n");
 									fclose(opened_file);
@@ -1569,19 +1569,19 @@ static int ministry_task(pid_t id){
 								}
 								exclusive_sem = 0;
 							}
-							else if (!strcmp(keyword, leer) && success) {
+							else if (0 == strcmp(keyword, leer) && success) {
 								if (!find_string(value, opened_file)) success = 0;
 							}
-							else if (!strcmp(keyword, escribir) && success) {
+							else if (0 == strcmp(keyword, escribir) && success) {
 								int curr_cursor = ftell(opened_file);
 								fseek(opened_file, 0, SEEK_END);
 								fprintf(opened_file, "%s\n", value);
 								wrote = 1;
 							}
-							else if (!strcmp(keyword, anular) && success) {
+							else if (0 == strcmp(keyword, anular) && success) {
 								if (find_string(value, opened_file)) success = 0;
 							}
-							else if (!strcmp(keyword, renuncia)) {
+							else if (0 == strcmp(keyword, renuncia)) {
 								if (success) {
 									mutex= sem_open("Legislativo.txt", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
 									if (mutex == SEM_FAILED) mutex = sem_open("Legislativo.txt", O_CREAT);
@@ -1615,10 +1615,10 @@ static int ministry_task(pid_t id){
 									sem_close(mutex);
 								}
 							}
-							else if (!strcmp(keyword, exito)) {
+							else if (0 == strcmp(keyword, exito)) {
 								acti->success = value;
 							}
-							else if (!strcmp(keyword, fracaso)) {
+							else if (0 == strcmp(keyword, fracaso)) {
 								acti->failure = value;
 								end = 1;
 							}
